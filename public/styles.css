@@ -605,6 +605,12 @@ header h1 {
     box-shadow: -10px 10px 30px #0051ff2d;
 }
 
+/* Share button variant - gray/silver blob */
+.secondary-btn .blob1 {
+    background: radial-gradient(circle 60px at 0% 100%, #888888, #55555580, transparent);
+    box-shadow: -10px 10px 30px rgba(136, 136, 136, 0.18);
+}
+
 .primary-btn .inner,
 .secondary-btn .inner,
 .copy-btn .inner {
@@ -754,6 +760,7 @@ header h1 {
 /* Delete Button Variant */
 .link-action-btn.delete-btn .blob1 {
     background: radial-gradient(circle 60px at 0% 100%, #ff3f3f, #ff000080, transparent);
+    box-shadow: -10px 10px 30px rgba(255, 0, 0, 0.18);
 }
 
 .link-action-btn.delete-btn:hover {
