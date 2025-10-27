@@ -61,20 +61,40 @@ auth.onAuthStateChanged(async (user) => {
 // Google Sign In
 async function signInWithGoogle() {
     try {
-        const result = await auth.signInWithPopup(googleProvider);
-        console.log('Signed in:', result.user.displayName);
+        // Try redirect method first (better for embedded browsers)
+        if (window.location !== window.parent.location) {
+            // We're in an iframe/embedded browser, use redirect
+            await auth.signInWithRedirect(googleProvider);
+        } else {
+            // Try popup method
+            const result = await auth.signInWithPopup(googleProvider);
+            console.log('Signed in:', result.user.displayName);
+        }
     } catch (error) {
         console.error('Error signing in:', error);
         
         if (error.code === 'auth/popup-blocked') {
-            alert('Popup was blocked. Please allow popups for this site.');
+            // Fallback to redirect if popup is blocked
+            console.log('Popup blocked, trying redirect...');
+            await auth.signInWithRedirect(googleProvider);
         } else if (error.code === 'auth/popup-closed-by-user') {
             // User closed popup, do nothing
+        } else if (error.code === 'auth/unauthorized-domain') {
+            alert('This domain is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains');
         } else {
-            alert('Error signing in. Please try again.');
+            alert('Error signing in: ' + error.message + '\n\nTip: Try opening in a regular browser instead of VS Code.');
         }
     }
 }
+
+// Handle redirect result
+auth.getRedirectResult().then((result) => {
+    if (result.user) {
+        console.log('Signed in via redirect:', result.user.displayName);
+    }
+}).catch((error) => {
+    console.error('Redirect error:', error);
+});
 
 // Sign Out
 async function signOut() {
