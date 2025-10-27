@@ -408,6 +408,9 @@ function updateAnalyticsDisplay(analytics) {
         : 0;
     document.getElementById('ctr').textContent = `${ctr}%`;
 
+    // Update metric cards
+    updateMetricCards(analytics);
+    
     // Update devices chart
     updateChart('devicesChart', analytics.devices || {});
     
@@ -419,6 +422,40 @@ function updateAnalyticsDisplay(analytics) {
     
     // Update click history
     updateClickHistory(analytics.clickHistory || []);
+}
+
+// Update Metric Cards
+function updateMetricCards(analytics) {
+    // Page Views by Device
+    const devices = analytics.devices || {};
+    document.getElementById('desktopViews').textContent = devices.Desktop || 0;
+    document.getElementById('mobileViews').textContent = devices.Mobile || 0;
+    
+    // Top Browsers
+    const browsers = analytics.browsers || {};
+    const sortedBrowsers = Object.entries(browsers).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedBrowsers.length >= 1) {
+        document.getElementById('topBrowser1Name').textContent = sortedBrowsers[0][0];
+        document.getElementById('topBrowser1Value').textContent = sortedBrowsers[0][1].toLocaleString();
+    }
+    
+    if (sortedBrowsers.length >= 2) {
+        document.getElementById('topBrowser2Name').textContent = sortedBrowsers[1][0];
+        document.getElementById('topBrowser2Value').textContent = sortedBrowsers[1][1].toLocaleString();
+    }
+    
+    // Engagement (most active referrer)
+    const referrers = analytics.referrers || {};
+    const sortedReferrers = Object.entries(referrers).sort((a, b) => b[1] - a[1]);
+    
+    if (sortedReferrers.length > 0) {
+        document.getElementById('engagementIndicator').textContent = sortedReferrers[0][0];
+        document.getElementById('engagementValue').textContent = sortedReferrers[0][1].toLocaleString();
+    } else {
+        document.getElementById('engagementIndicator').textContent = 'No data';
+        document.getElementById('engagementValue').textContent = '0';
+    }
 }
 
 // Update Chart
