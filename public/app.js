@@ -622,7 +622,7 @@ async function trackImpression(shortCode) {
     }
 }
 
-// Share Link
+// Share Link with Platform Detection
 async function shareLink(url, shortCode) {
     // If called from dashboard, use parameters
     if (arguments.length === 2) {
@@ -633,36 +633,86 @@ async function shareLink(url, shortCode) {
         url = shortUrlDisplay.value;
     }
     
-    // Try native Web Share API first
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: 'Check out this link',
-                url: url
-            });
-            
-            // Track share
-            if (currentShortCode) {
-                await fetch(`/api/track/share/${currentShortCode}`, {
-                    method: 'POST'
-                });
-            }
-        } catch (error) {
-            // User cancelled or error occurred
-            console.log('Share cancelled or failed:', error);
-        }
+    // Show share menu for better tracking
+    showShareMenu(url, shortCode || currentShortCode);
+}
+
+// Show Share Menu with Platform Options
+function showShareMenu(baseUrl, shortCode) {
+    const platforms = [
+        { name: 'WhatsApp', icon: '💬', utm: 'whatsapp', url: `https://wa.me/?text=${encodeURIComponent(baseUrl + '?utm_source=whatsapp')}` },
+        { name: 'Instagram', icon: '📷', utm: 'instagram', copyOnly: true },
+        { name: 'Facebook', icon: '👥', utm: 'facebook', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(baseUrl + '?utm_source=facebook')}` },
+        { name: 'Twitter/X', icon: '🐦', utm: 'twitter', url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(baseUrl + '?utm_source=twitter')}` },
+        { name: 'LinkedIn', icon: '💼', utm: 'linkedin', url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(baseUrl + '?utm_source=linkedin')}` },
+        { name: 'Telegram', icon: '✈️', utm: 'telegram', url: `https://t.me/share/url?url=${encodeURIComponent(baseUrl + '?utm_source=telegram')}` },
+        { name: 'Copy Link', icon: '📋', utm: 'direct', copyOnly: true }
+    ];
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'share-modal';
+    modal.innerHTML = `
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h3>📤 Share Link</h3>
+                <button class="share-modal-close" onclick="closeShareMenu()">&times;</button>
+            </div>
+            <div class="share-modal-body">
+                ${platforms.map(platform => `
+                    <button class="share-platform-btn" onclick="shareToplatform('${platform.utm}', '${baseUrl}', ${platform.copyOnly || false}, '${platform.url || ''}', '${shortCode}')">
+                        <span class="platform-icon">${platform.icon}</span>
+                        <span class="platform-name">${platform.name}</span>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+
+// Close Share Menu
+function closeShareMenu() {
+    const modal = document.querySelector('.share-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+// Share to Specific Platform
+async function shareToplatform(platform, baseUrl, copyOnly, shareUrl, shortCode) {
+    const trackedUrl = `${baseUrl}?utm_source=${platform}`;
+    
+    if (copyOnly) {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(platform === 'direct' ? baseUrl : trackedUrl);
+        
+        // Show success message
+        const btn = event.target.closest('.share-platform-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<span class="platform-icon">✅</span><span class="platform-name">Copied!</span>';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
     } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(url);
-        
-        // Track share
-        if (currentShortCode) {
-            await fetch(`/api/track/share/${currentShortCode}`, {
-                method: 'POST'
-            });
-        }
-        
-        alert('Link copied to clipboard! Share it with others.');
+        // Open share URL
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+        closeShareMenu();
+    }
+    
+    // Track share
+    if (shortCode) {
+        await fetch(`/api/track/share/${shortCode}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ platform })
+        });
     }
 }
 

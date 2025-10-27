@@ -429,24 +429,86 @@ app.get('/:shortCode', async (req, res) => {
 
   // Track click analytics
   const userAgent = req.headers['user-agent'] || 'Unknown';
-  const referrer = req.headers['referer'] || 'Direct';
+  const httpReferrer = req.headers['referer'] || req.headers['referrer'] || '';
   
-  // Simple device detection
+  // Enhanced referrer detection
+  let referrerSource = 'Direct';
+  
+  // Check URL query parameters first (most reliable - from share menu)
+  const utmSource = req.query.utm_source;
+  
+  if (utmSource) {
+    // Use UTM source from share menu
+    referrerSource = utmSource.charAt(0).toUpperCase() + utmSource.slice(1);
+  } else if (httpReferrer) {
+    // Parse HTTP referrer header
+    try {
+      const refUrl = new URL(httpReferrer);
+      const hostname = refUrl.hostname.toLowerCase().replace('www.', '');
+      
+      // Map common domains to friendly names
+      if (hostname.includes('google')) referrerSource = 'Google';
+      else if (hostname.includes('facebook') || hostname.includes('fb.com')) referrerSource = 'Facebook';
+      else if (hostname.includes('instagram')) referrerSource = 'Instagram';
+      else if (hostname.includes('twitter') || hostname.includes('t.co')) referrerSource = 'X (formerly Twitter)';
+      else if (hostname.includes('linkedin')) referrerSource = 'LinkedIn';
+      else if (hostname.includes('reddit')) referrerSource = 'Reddit';
+      else if (hostname.includes('tiktok')) referrerSource = 'TikTok';
+      else if (hostname.includes('youtube')) referrerSource = 'YouTube';
+      else if (hostname.includes('pinterest')) referrerSource = 'Pinterest';
+      else if (hostname.includes('whatsapp')) referrerSource = 'WhatsApp';
+      else if (hostname.includes('telegram')) referrerSource = 'Telegram';
+      else if (hostname.includes('discord')) referrerSource = 'Discord';
+      else if (hostname.includes('slack')) referrerSource = 'Slack';
+      else referrerSource = hostname;
+    } catch (e) {
+      referrerSource = httpReferrer;
+    }
+  } else {
+    // Detect in-app browsers based on User-Agent
+    const ua = userAgent.toLowerCase();
+    
+    if (ua.includes('whatsapp')) referrerSource = 'WhatsApp';
+    else if (ua.includes('instagram')) referrerSource = 'Instagram';
+    else if (ua.includes('fbav') || ua.includes('fban') || ua.includes('fb_iab')) referrerSource = 'Facebook';
+    else if (ua.includes('twitter')) referrerSource = 'X (formerly Twitter)';
+    else if (ua.includes('linkedin')) referrerSource = 'LinkedIn';
+    else if (ua.includes('snapchat')) referrerSource = 'Snapchat';
+    else if (ua.includes('tiktok')) referrerSource = 'TikTok';
+    else if (ua.includes('telegram')) referrerSource = 'Telegram';
+    else if (ua.includes('line/')) referrerSource = 'LINE';
+    else if (ua.includes('kakaotalk')) referrerSource = 'KakaoTalk';
+    else if (ua.includes('wechat')) referrerSource = 'WeChat';
+    else referrerSource = 'Unknown';
+  }
+  
+  // Device detection
   const isMobile = /mobile|android|iphone|ipad|ipod/i.test(userAgent);
   const deviceType = isMobile ? 'Mobile' : 'Desktop';
   
-  // Simple browser detection
+  // Enhanced browser detection
   let browser = 'Other';
-  if (userAgent.includes('Chrome')) browser = 'Chrome';
-  else if (userAgent.includes('Firefox')) browser = 'Firefox';
-  else if (userAgent.includes('Safari')) browser = 'Safari';
-  else if (userAgent.includes('Edge')) browser = 'Edge';
+  const ua = userAgent.toLowerCase();
+  
+  // Check for in-app browsers first
+  if (ua.includes('instagram')) browser = 'Instagram App';
+  else if (ua.includes('whatsapp')) browser = 'WhatsApp';
+  else if (ua.includes('fb_iab') || ua.includes('fbav')) browser = 'Facebook App';
+  else if (ua.includes('twitter')) browser = 'Twitter App';
+  else if (ua.includes('linkedin')) browser = 'LinkedIn App';
+  // Regular browsers
+  else if (ua.includes('edg')) browser = 'Edge';
+  else if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+  else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+  else if (ua.includes('firefox')) browser = 'Firefox';
+  else if (ua.includes('opera') || ua.includes('opr')) browser = 'Opera';
   
   const clickData = {
     timestamp: new Date().toISOString(),
     device: deviceType,
     browser,
-    referrer
+    referrer: referrerSource,
+    userAgent: userAgent.substring(0, 200) // Store truncated UA for debugging
   };
 
   try {
