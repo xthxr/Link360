@@ -483,38 +483,61 @@ async function handleCreateLink() {
 
 async function loadLinks() {
     try {
-        const token = await getAuthToken();
-        
-        if (!token) {
+        if (!currentUser) {
             emptyState.style.display = 'block';
             linksContainer.style.display = 'none';
             return;
         }
         
-        const response = await fetch('/api/user/links', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch links');
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            showToast('Firestore not available', 'error');
+            return;
         }
         
-        const data = await response.json();
-        userLinks = data.links || [];
+        const db = firebase.firestore();
         
-        if (userLinks.length > 0) {
-            displayLinks(userLinks);
-            updateStats(userLinks);
-            emptyState.style.display = 'none';
-            linksContainer.style.display = 'grid';
-        } else {
-            emptyState.style.display = 'block';
-            linksContainer.style.display = 'none';
+        // Set up real-time listener for links
+        if (window.linksUnsubscribe) {
+            window.linksUnsubscribe();
         }
+        
+        window.linksUnsubscribe = db.collection('links')
+            .where('userId', '==', currentUser.uid)
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(async (snapshot) => {
+                userLinks = [];
+                
+                for (const doc of snapshot.docs) {
+                    const linkData = doc.data();
+                    
+                    // Get click count for this link
+                    const clicksSnapshot = await db.collection('analytics')
+                        .where('shortCode', '==', linkData.shortCode)
+                        .get();
+                    
+                    userLinks.push({
+                        ...linkData,
+                        clicks: clicksSnapshot.size,
+                        id: doc.id
+                    });
+                }
+                
+                if (userLinks.length > 0) {
+                    displayLinks(userLinks);
+                    updateStats(userLinks);
+                    emptyState.style.display = 'none';
+                    linksContainer.style.display = 'grid';
+                } else {
+                    emptyState.style.display = 'block';
+                    linksContainer.style.display = 'none';
+                }
+            }, (error) => {
+                console.error('Error loading links:', error);
+                showToast('Failed to load links: ' + error.message, 'error');
+            });
+        
     } catch (error) {
-        console.error('Error loading links:', error);
+        console.error('Error setting up links listener:', error);
         showToast('Failed to load links', 'error');
     }
 }
@@ -733,10 +756,18 @@ async function loadAnalytics() {
     if (analyticsLinkSelect && userLinks.length > 0) {
         analyticsLinkSelect.innerHTML = '<option value="all">All Links</option>' +
             userLinks.map(link => `<option value="${link.shortCode}">${link.shortUrl}</option>`).join('');
+        
+        // Add change listener
+        analyticsLinkSelect.addEventListener('change', () => {
+            loadAnalyticsData(analyticsLinkSelect.value);
+        });
     }
     
     // Load analytics data
     loadAnalyticsData('all');
+    
+    // Set up real-time listener
+    setupAnalyticsRealtime('all');
 }
 
 async function loadLinkAnalytics(shortCode) {
@@ -745,42 +776,162 @@ async function loadLinkAnalytics(shortCode) {
         analyticsLinkSelect.value = shortCode;
     }
     loadAnalyticsData(shortCode);
+    setupAnalyticsRealtime(shortCode);
+}
+
+async function setupAnalyticsRealtime(linkFilter) {
+    if (typeof firebase === 'undefined' || !firebase.firestore) {
+        console.log('Firestore not available');
+        return;
+    }
+    
+    const db = firebase.firestore();
+    
+    // Unsubscribe from previous listener if exists
+    if (window.analyticsUnsubscribe) {
+        window.analyticsUnsubscribe();
+    }
+    
+    // Set up real-time listener for clicks
+    if (linkFilter === 'all') {
+        // Listen to all links for current user
+        window.analyticsUnsubscribe = db.collection('links')
+            .where('userId', '==', currentUser.uid)
+            .onSnapshot((snapshot) => {
+                console.log('Real-time update: links changed');
+                loadAnalyticsData('all');
+            }, (error) => {
+                console.error('Real-time listener error:', error);
+            });
+    } else {
+        // Listen to specific link
+        window.analyticsUnsubscribe = db.collection('links')
+            .doc(linkFilter)
+            .onSnapshot((doc) => {
+                console.log('Real-time update: link changed');
+                loadAnalyticsData(linkFilter);
+            }, (error) => {
+                console.error('Real-time listener error:', error);
+            });
+    }
 }
 
 async function loadAnalyticsData(linkFilter) {
     try {
-        const token = await getAuthToken();
-        const endpoint = linkFilter === 'all' ? '/api/analytics/overview' : `/api/analytics/${linkFilter}`;
-        
-        const response = await fetch(endpoint, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch analytics');
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            showToast('Firestore not available', 'error');
+            return;
         }
         
-        const data = await response.json();
+        const db = firebase.firestore();
+        let totalClicks = 0;
+        let uniqueVisitors = new Set();
+        let countries = new Set();
+        let devices = {};
+        let browsers = {};
+        let referrers = {};
+        let clicksOverTime = {};
+        
+        // Fetch links based on filter
+        let linksQuery;
+        if (linkFilter === 'all') {
+            linksQuery = db.collection('links').where('userId', '==', currentUser.uid);
+        } else {
+            linksQuery = db.collection('links').where('shortCode', '==', linkFilter).where('userId', '==', currentUser.uid);
+        }
+        
+        const linksSnapshot = await linksQuery.get();
+        
+        // Fetch analytics for each link
+        for (const linkDoc of linksSnapshot.docs) {
+            const linkData = linkDoc.data();
+            const shortCode = linkData.shortCode;
+            
+            // Get clicks for this link
+            const clicksSnapshot = await db.collection('analytics')
+                .where('shortCode', '==', shortCode)
+                .orderBy('timestamp', 'desc')
+                .limit(1000)
+                .get();
+            
+            clicksSnapshot.forEach(doc => {
+                const click = doc.data();
+                totalClicks++;
+                
+                // Track unique visitors
+                if (click.ip) {
+                    uniqueVisitors.add(click.ip);
+                }
+                
+                // Track countries
+                if (click.country) {
+                    countries.add(click.country);
+                }
+                
+                // Track devices
+                const device = click.device || 'Unknown';
+                devices[device] = (devices[device] || 0) + 1;
+                
+                // Track browsers
+                const browser = click.browser || 'Unknown';
+                browsers[browser] = (browsers[browser] || 0) + 1;
+                
+                // Track referrers
+                const referrer = click.referrer || 'Direct';
+                referrers[referrer] = (referrers[referrer] || 0) + 1;
+                
+                // Track clicks over time
+                if (click.timestamp) {
+                    const date = new Date(click.timestamp.toDate()).toLocaleDateString();
+                    clicksOverTime[date] = (clicksOverTime[date] || 0) + 1;
+                }
+            });
+        }
+        
+        // Calculate average daily clicks
+        const daysCount = Object.keys(clicksOverTime).length || 1;
+        const avgDaily = Math.round(totalClicks / daysCount);
         
         // Update analytics stats
-        document.getElementById('analyticsClicks').textContent = data.totalClicks || 0;
-        document.getElementById('analyticsVisitors').textContent = data.uniqueVisitors || 0;
-        document.getElementById('analyticsCountries').textContent = data.countries || 0;
-        document.getElementById('analyticsAvgDaily').textContent = data.avgDaily || 0;
+        document.getElementById('analyticsClicks').textContent = totalClicks.toLocaleString();
+        document.getElementById('analyticsVisitors').textContent = uniqueVisitors.size.toLocaleString();
+        document.getElementById('analyticsCountries').textContent = countries.size.toLocaleString();
+        document.getElementById('analyticsAvgDaily').textContent = avgDaily.toLocaleString();
+        
+        // Prepare data for charts
+        const clicksOverTimeArray = Object.entries(clicksOverTime)
+            .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+            .map(([date, count]) => ({ date, count }));
+        
+        const topReferrers = Object.entries(referrers)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([source, count]) => ({ source, count }));
+        
+        const devicesList = Object.entries(devices)
+            .sort((a, b) => b[1] - a[1])
+            .map(([device, count]) => ({ device, count }));
+        
+        const browsersList = Object.entries(browsers)
+            .sort((a, b) => b[1] - a[1])
+            .map(([browser, count]) => ({ browser, count }));
+        
+        const geographicList = Array.from(countries).map(country => ({
+            country,
+            count: 0 // Would need additional tracking for exact counts per country
+        }));
         
         // Render charts and lists
-        renderClicksChart(data.clicksOverTime || []);
-        renderReferrersChart(data.topReferrers || []);
-        renderGeographicList(data.geographic || []);
-        renderDevicesList(data.devices || []);
-        renderBrowsersList(data.browsers || []);
-        renderReferrersList(data.referrers || []);
+        renderClicksChart(clicksOverTimeArray);
+        renderReferrersChart(topReferrers);
+        renderGeographicList(geographicList);
+        renderDevicesList(devicesList);
+        renderBrowsersList(browsersList);
+        renderReferrersList(topReferrers);
         
     } catch (error) {
         console.error('Error loading analytics:', error);
-        showToast('Failed to load analytics', 'error');
+        showToast('Failed to load analytics: ' + error.message, 'error');
     }
 }
 
