@@ -571,11 +571,36 @@ async function loadLinks() {
     }
 }
 
-function displayLinks(links) {
-    linksContainer.innerHTML = links.map(link => `
-        <div class="link-card" data-link-id="${link.shortCode}">
-            <div class="link-icon">
-                <i class="fas fa-link"></i>
+function displayLinks(links, filter) {
+    // Add "Delete All Inactive" button if viewing inactive links
+    let headerHTML = '';
+    if (filter === 'inactive' && links.length > 0) {
+        headerHTML = `
+            <div style="margin-bottom: 20px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h4 style="margin: 0 0 4px 0; color: var(--accent-red); font-size: 14px; font-weight: 600;">
+                        <i class="fas fa-exclamation-triangle"></i> Inactive Links
+                    </h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">
+                        These links will be permanently deleted after 15 days of deactivation
+                    </p>
+                </div>
+                <button class="btn btn-danger" onclick="permanentlyDeleteInactiveLinks()">
+                    <i class="fas fa-trash"></i> Delete All Inactive
+                </button>
+            </div>
+        `;
+    }
+    
+    const linksHTML = links.map(link => {
+        const isInactive = link.isActive === false;
+        const daysRemaining = link.scheduledDeletion ? 
+            Math.ceil((link.scheduledDeletion.toDate() - new Date()) / (1000 * 60 * 60 * 24)) : null;
+        
+        return `
+        <div class="link-card ${isInactive ? 'inactive-link' : ''}" data-link-id="${link.shortCode}">
+            <div class="link-icon ${isInactive ? 'inactive' : ''}">
+                <i class="fas fa-${isInactive ? 'ban' : 'link'}"></i>
             </div>
             <div class="link-content">
                 <div class="link-url">
@@ -583,11 +608,13 @@ function displayLinks(links) {
                     <button class="btn-icon" onclick="copyLink('${link.shortUrl}')" title="Copy">
                         <i class="fas fa-copy"></i>
                     </button>
+                    ${isInactive ? `<span class="inactive-badge">Inactive</span>` : ''}
                 </div>
                 <div class="link-destination">${link.originalUrl}</div>
                 <div class="link-meta">
                     <span><i class="fas fa-calendar"></i> ${formatDate(link.createdAt)}</span>
                     ${link.utmParams ? '<span><i class="fas fa-tags"></i> UTM Enabled</span>' : ''}
+                    ${isInactive && daysRemaining ? `<span style="color: var(--accent-red);"><i class="fas fa-clock"></i> Deletes in ${daysRemaining} days</span>` : ''}
                 </div>
             </div>
             <div class="link-stats">
@@ -597,31 +624,42 @@ function displayLinks(links) {
                 </div>
             </div>
             <div class="link-actions">
-                <button class="link-action-btn" onclick="viewAnalytics('${link.shortCode}')" title="Analytics">
-                    <i class="fas fa-chart-line"></i>
-                </button>
-                <button class="link-action-btn" onclick="showQRCode('${link.shortUrl}', '${link.shortCode}')" title="QR Code">
-                    <i class="fas fa-qrcode"></i>
-                </button>
-                <button class="link-action-btn" onclick="shareLink('${link.shortUrl}')" title="Share">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-                <button class="link-action-btn delete" onclick="deleteLink('${link.shortCode}')" title="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
+                ${!isInactive ? `
+                    <button class="link-action-btn" onclick="viewAnalytics('${link.shortCode}')" title="Analytics">
+                        <i class="fas fa-chart-line"></i>
+                    </button>
+                    <button class="link-action-btn" onclick="showQRCode('${link.shortUrl}', '${link.shortCode}')" title="QR Code">
+                        <i class="fas fa-qrcode"></i>
+                    </button>
+                    <button class="link-action-btn" onclick="shareLink('${link.shortUrl}')" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="link-action-btn delete" onclick="deleteLink('${link.shortCode}')" title="Deactivate">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : `
+                    <button class="link-action-btn" onclick="reactivateLink('${link.shortCode}')" title="Reactivate">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                `}
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
+    
+    linksContainer.innerHTML = headerHTML + linksHTML;
 }
 
 function updateStats(links) {
-    const totalClicks = links.reduce((sum, link) => sum + (link.clicks || 0), 0);
-    const activeCount = links.filter(link => link.clicks > 0).length;
-    const avgRate = links.length > 0 ? (totalClicks / links.length).toFixed(1) : 0;
+    const activeLinks = links.filter(link => link.isActive !== false);
+    const totalClicks = activeLinks.reduce((sum, link) => sum + (link.clicks || 0), 0);
+    const activeWithClicks = activeLinks.filter(link => link.clicks > 0).length;
+    const avgRate = activeLinks.length > 0 ? (totalClicks / activeLinks.length).toFixed(1) : 0;
     
-    totalLinksEl.textContent = links.length;
+    totalLinksEl.textContent = activeLinks.length;
     totalClicksEl.textContent = totalClicks.toLocaleString();
-    activeLinksEl.textContent = activeCount;
+    activeLinksEl.textContent = activeWithClicks;
+    avgClickRateEl.textContent = avgRate;
     avgClickRateEl.textContent = avgRate;
 }
 
@@ -629,12 +667,15 @@ function filterLinks(filter) {
     let filtered = [...userLinks];
     
     if (filter === 'active') {
-        filtered = filtered.filter(link => link.clicks > 0);
+        // Active links: isActive = true or undefined (for backwards compatibility)
+        filtered = filtered.filter(link => link.isActive !== false);
     } else if (filter === 'inactive') {
-        filtered = filtered.filter(link => link.clicks === 0);
+        // Inactive links: isActive = false
+        filtered = filtered.filter(link => link.isActive === false);
     }
+    // 'all' shows everything
     
-    displayLinks(filtered);
+    displayLinks(filtered, filter);
 }
 
 function sortLinks(sortBy) {
@@ -748,28 +789,136 @@ function shareLink(url) {
 }
 
 async function deleteLink(shortCode) {
-    if (!confirm('Are you sure you want to delete this link?')) {
+    if (!confirm('Are you sure you want to deactivate this link? It will be moved to Inactive section.')) {
         return;
     }
     
     try {
-        const token = await getAuthToken();
-        const response = await fetch(`/api/links/${shortCode}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            showToast('Firestore not available', 'error');
+            return;
+        }
+        
+        const db = firebase.firestore();
+        
+        // Find the link document
+        const linkQuery = await db.collection('links')
+            .where('shortCode', '==', shortCode)
+            .where('userId', '==', currentUser.uid)
+            .limit(1)
+            .get();
+        
+        if (linkQuery.empty) {
+            showToast('Link not found', 'error');
+            return;
+        }
+        
+        const linkDoc = linkQuery.docs[0];
+        
+        // Soft delete: mark as inactive with deletion date
+        const deactivationDate = firebase.firestore.Timestamp.now();
+        const permanentDeletionDate = new Date();
+        permanentDeletionDate.setDate(permanentDeletionDate.getDate() + 15);
+        
+        await linkDoc.ref.update({
+            isActive: false,
+            deactivatedAt: deactivationDate,
+            scheduledDeletion: firebase.firestore.Timestamp.fromDate(permanentDeletionDate)
         });
         
-        if (response.ok) {
-            showToast('Link deleted successfully', 'success');
-            loadLinks();
-        } else {
-            showToast('Failed to delete link', 'error');
-        }
+        showToast('Link deactivated. Will be permanently deleted in 15 days.', 'success');
+        loadLinks();
+        
     } catch (error) {
         console.error('Error:', error);
-        showToast('Failed to delete link', 'error');
+        showToast('Failed to deactivate link: ' + error.message, 'error');
+    }
+}
+
+async function permanentlyDeleteInactiveLinks() {
+    if (!confirm('Are you sure you want to permanently delete ALL inactive links? This cannot be undone!')) {
+        return;
+    }
+    
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            showToast('Firestore not available', 'error');
+            return;
+        }
+        
+        const db = firebase.firestore();
+        
+        // Find all inactive links
+        const inactiveLinksQuery = await db.collection('links')
+            .where('userId', '==', currentUser.uid)
+            .where('isActive', '==', false)
+            .get();
+        
+        if (inactiveLinksQuery.empty) {
+            showToast('No inactive links to delete', 'info');
+            return;
+        }
+        
+        // Delete all inactive links
+        const batch = db.batch();
+        let count = 0;
+        
+        inactiveLinksQuery.docs.forEach(doc => {
+            batch.delete(doc.ref);
+            count++;
+        });
+        
+        await batch.commit();
+        
+        showToast(`Successfully deleted ${count} inactive link${count > 1 ? 's' : ''}`, 'success');
+        loadLinks();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to delete inactive links: ' + error.message, 'error');
+    }
+}
+
+async function reactivateLink(shortCode) {
+    if (!confirm('Do you want to reactivate this link?')) {
+        return;
+    }
+    
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            showToast('Firestore not available', 'error');
+            return;
+        }
+        
+        const db = firebase.firestore();
+        
+        // Find the link document
+        const linkQuery = await db.collection('links')
+            .where('shortCode', '==', shortCode)
+            .where('userId', '==', currentUser.uid)
+            .limit(1)
+            .get();
+        
+        if (linkQuery.empty) {
+            showToast('Link not found', 'error');
+            return;
+        }
+        
+        const linkDoc = linkQuery.docs[0];
+        
+        // Reactivate the link
+        await linkDoc.ref.update({
+            isActive: true,
+            deactivatedAt: firebase.firestore.FieldValue.delete(),
+            scheduledDeletion: firebase.firestore.FieldValue.delete()
+        });
+        
+        showToast('Link reactivated successfully!', 'success');
+        loadLinks();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to reactivate link: ' + error.message, 'error');
     }
 }
 

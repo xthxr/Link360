@@ -850,6 +850,17 @@ html[data-theme="light"] .filter-select:hover {
     border-color: var(--accent-purple);
 }
 
+.link-card.inactive-link {
+    opacity: 0.6;
+    background: var(--bg-tertiary);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.link-card.inactive-link:hover {
+    opacity: 0.8;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
 .link-icon {
     width: 48px;
     height: 48px;
@@ -861,6 +872,25 @@ html[data-theme="light"] .filter-select:hover {
     font-size: 20px;
     color: var(--accent-purple);
     flex-shrink: 0;
+}
+
+.link-icon.inactive {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    color: var(--accent-red);
+}
+
+.inactive-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-full);
+    color: var(--accent-red);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .link-content {
@@ -876,6 +906,7 @@ html[data-theme="light"] .filter-select:hover {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .link-short {
