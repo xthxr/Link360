@@ -1073,6 +1073,7 @@ async function loadAnalyticsData(linkFilter) {
         let browsers = {};
         let referrers = {};
         let clicksOverTime = {};
+        let allClickHistory = [];
         
         // Fetch links based on filter
         let linksQuery;
@@ -1084,74 +1085,87 @@ async function loadAnalyticsData(linkFilter) {
         
         const linksSnapshot = await linksQuery.get();
         
-        // Fetch analytics for each link
+        if (linksSnapshot.empty) {
+            console.log('No links found for user');
+            // Update UI with zeros
+            updateAnalyticsUI(0, 0, 0, 0, {}, {}, {}, {});
+            return;
+        }
+        
+        // Fetch analytics for each link (NEW STRUCTURE)
         for (const linkDoc of linksSnapshot.docs) {
             const linkData = linkDoc.data();
             const shortCode = linkData.shortCode;
             
-            // Get clicks for this link (removed orderBy to avoid composite index requirement)
-            const clicksSnapshot = await db.collection('analytics')
-                .where('shortCode', '==', shortCode)
-                .limit(1000)
-                .get();
+            // Get analytics document for this link (single document per link)
+            const analyticsDoc = await db.collection('analytics').doc(shortCode).get();
             
-            // Collect clicks and sort them in memory
-            const clicks = [];
-            clicksSnapshot.forEach(doc => {
-                const click = doc.data();
-                if (click.timestamp) {
-                    clicks.push(click);
-                }
-            });
-            
-            // Sort by timestamp in memory
-            clicks.sort((a, b) => {
-                const timeA = a.timestamp?.toDate?.() || new Date(0);
-                const timeB = b.timestamp?.toDate?.() || new Date(0);
-                return timeB - timeA;
-            });
-            
-            // Process clicks
-            clicks.forEach(click => {
-                totalClicks++;
+            if (analyticsDoc.exists) {
+                const analytics = analyticsDoc.data();
                 
-                // Track unique visitors
-                if (click.ip) {
-                    uniqueVisitors.add(click.ip);
+                console.log(`Analytics for ${shortCode}:`, analytics);
+                
+                // Aggregate clicks
+                totalClicks += analytics.clicks || 0;
+                
+                // Merge devices
+                if (analytics.devices) {
+                    Object.entries(analytics.devices).forEach(([device, count]) => {
+                        devices[device] = (devices[device] || 0) + count;
+                    });
                 }
                 
-                // Track countries
-                if (click.country) {
-                    countries.add(click.country);
+                // Merge browsers
+                if (analytics.browsers) {
+                    Object.entries(analytics.browsers).forEach(([browser, count]) => {
+                        browsers[browser] = (browsers[browser] || 0) + count;
+                    });
                 }
                 
-                // Track devices
-                const device = click.device || 'Unknown';
-                devices[device] = (devices[device] || 0) + 1;
-                
-                // Track browsers
-                const browser = click.browser || 'Unknown';
-                browsers[browser] = (browsers[browser] || 0) + 1;
-                
-                // Track referrers
-                const referrer = click.referrer || 'Direct';
-                referrers[referrer] = (referrers[referrer] || 0) + 1;
-                
-                // Track clicks over time
-                if (click.timestamp) {
-                    const date = new Date(click.timestamp.toDate()).toLocaleDateString();
-                    clicksOverTime[date] = (clicksOverTime[date] || 0) + 1;
+                // Merge referrers
+                if (analytics.referrers) {
+                    Object.entries(analytics.referrers).forEach(([referrer, count]) => {
+                        referrers[referrer] = (referrers[referrer] || 0) + count;
+                    });
                 }
-            });
+                
+                // Process click history for timeline
+                if (analytics.clickHistory && Array.isArray(analytics.clickHistory)) {
+                    analytics.clickHistory.forEach(click => {
+                        allClickHistory.push(click);
+                        
+                        // Track clicks over time
+                        if (click.timestamp) {
+                            const date = new Date(click.timestamp).toLocaleDateString();
+                            clicksOverTime[date] = (clicksOverTime[date] || 0) + 1;
+                        }
+                    });
+                }
+                
+                // Track countries if available
+                if (analytics.countries) {
+                    Object.keys(analytics.countries).forEach(country => {
+                        countries.add(country);
+                    });
+                }
+            }
         }
+        
+        // Calculate unique visitors from click history (approximate by counting unique referrer+device combinations)
+        const visitorFingerprints = new Set();
+        allClickHistory.forEach(click => {
+            const fingerprint = `${click.referrer}_${click.device}_${click.browser}`;
+            visitorFingerprints.add(fingerprint);
+        });
+        const uniqueVisitorsCount = visitorFingerprints.size || totalClicks; // Fallback to total clicks if no history
         
         // Calculate average daily clicks
         const daysCount = Object.keys(clicksOverTime).length || 1;
         const avgDaily = Math.round(totalClicks / daysCount);
         
-        // Update analytics stats
+        // Update analytics stats in UI
         document.getElementById('analyticsClicks').textContent = totalClicks.toLocaleString();
-        document.getElementById('analyticsVisitors').textContent = uniqueVisitors.size.toLocaleString();
+        document.getElementById('analyticsVisitors').textContent = uniqueVisitorsCount.toLocaleString();
         document.getElementById('analyticsCountries').textContent = countries.size.toLocaleString();
         document.getElementById('analyticsAvgDaily').textContent = avgDaily.toLocaleString();
         
@@ -1185,6 +1199,13 @@ async function loadAnalyticsData(linkFilter) {
         renderDevicesList(devicesList);
         renderBrowsersList(browsersList);
         renderReferrersList(topReferrers);
+        
+        console.log('✅ Analytics loaded successfully:', {
+            totalClicks,
+            uniqueVisitors: uniqueVisitorsCount,
+            countries: countries.size,
+            avgDaily
+        });
         
     } catch (error) {
         console.error('Error loading analytics:', error);
