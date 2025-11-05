@@ -1448,12 +1448,12 @@ textarea.form-input {
 
 /* Login Modal */
 .login-modal {
-    max-width: 450px;
+    max-width: 480px;
 }
 
 .login-header {
     text-align: center;
-    padding: 32px 28px 24px;
+    padding: 32px 28px 20px;
     border-bottom: 1px solid var(--border-primary);
 }
 
@@ -1481,6 +1481,31 @@ textarea.form-input {
 .login-header p {
     color: var(--text-secondary);
     font-size: 14px;
+}
+
+.login-description {
+    padding: 20px 28px 0;
+    background: var(--background-secondary);
+}
+
+.login-description a:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.github-btn {
+    color: var(--text-primary) !important;
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.github-btn:hover {
+    color: var(--accent-purple) !important;
+    transform: translateY(-2px);
+}
+
+.github-btn i {
+    font-size: 20px;
 }
 
 /* ================================
