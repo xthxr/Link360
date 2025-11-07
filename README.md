@@ -9,7 +9,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange.svg)](https://firebase.google.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-black.svg)](https://socket.io)
 
-**A professional-grade, open-source platform for creating trackable short links with real-time analytics and instant QR code generation.**
+**A professional-grade, open-source platform for creating trackable short links with real-time analytics and instant QR code generation just a little better than bitly.com**
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [API Reference](#-api-reference) • [Contributing](#-contributing)
 
