@@ -487,31 +487,11 @@ Link360 can be deployed to any Node.js hosting platform:
 
 #### Recommended Platforms
 
-1. **[Vercel](https://vercel.com)** ⭐ Recommended
+**[Vercel](https://vercel.com)** ⭐ Recommended
    - Zero-config deployment
    - Automatic HTTPS
    - Environment variable management
    - Global CDN
-
-2. **[Heroku](https://heroku.com)**
-   - Free tier available
-   - Easy Git-based deployment
-   - Add-on ecosystem
-
-3. **[Google Cloud Run](https://cloud.google.com/run)**
-   - Seamless Firebase integration
-   - Auto-scaling
-   - Pay-per-use pricing
-
-4. **[DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)**
-   - Simple deployment
-   - Predictable pricing
-   - Managed infrastructure
-
-5. **[Railway](https://railway.app)** / **[Render](https://render.com)**
-   - Modern developer experience
-   - Automatic deployments
-   - Free tier available
 
 ### Pre-Deployment Checklist
 
