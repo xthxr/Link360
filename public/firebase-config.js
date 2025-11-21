@@ -3,12 +3,12 @@
 // or fallback to hardcoded values for local development
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCfgZs4_L41sc80CJa4sKOXmcssiRe0QqE",
-  authDomain: "zaplink-71582.firebaseapp.com",
-  projectId: "zaplink-71582",
-  storageBucket: "zaplink-71582.firebasestorage.app",
-  messagingSenderId: "88016414117",
-  appId: "1:88016414117:web:21c0aa4cdcc89bf3cb344c"
+  apiKey: "AIzaSyAVHcF6OxRqpl2lUF3GnxumlNNcmhVEi1M",
+  authDomain: "zaplink-a234d.firebaseapp.com",
+  projectId: "zaplink-a234d",
+  storageBucket: "zaplink-a234d.firebasestorage.app",
+  messagingSenderId: "737715033373",
+  appId: "1:737715033373:web:e45138bafa82f9e6617df4",
 };
 
 // Initialize Firebase
