@@ -441,7 +441,23 @@ async function handleGoogleLogin() {
         
         const provider = new firebase.auth.GoogleAuthProvider();
         
-        // Try popup method first
+        // Detect if the browser will block popups by attempting to open a blank window.
+        // If blocked (returns null), use redirect flow immediately which works better in embedded/mobile browsers.
+        let testPopup = null;
+        try {
+            testPopup = window.open('about:blank', '_blank', 'width=1,height=1');
+            if (testPopup) testPopup.close();
+        } catch (err) {
+            testPopup = null;
+        }
+
+        if (!testPopup) {
+            console.log('Popup appears to be blocked — using redirect flow');
+            await firebase.auth().signInWithRedirect(provider);
+            return;
+        }
+
+        // Try popup method first (most user-friendly). Fallback to redirect if popup fails.
         try {
             const result = await firebase.auth().signInWithPopup(provider);
             console.log('Signed in:', result.user.displayName);
@@ -453,16 +469,13 @@ async function handleGoogleLogin() {
             // Restore last visited page or go to home
             const savedPage = localStorage.getItem('link360-current-page') || 'home';
             navigateToPage(savedPage);
-            
         } catch (popupError) {
             // If popup fails, try redirect
-            if (popupError.code === 'auth/popup-blocked') {
-                console.log('Popup blocked, trying redirect...');
+            console.log('Popup sign-in error — falling back to redirect:', popupError && popupError.code);
+            try {
                 await firebase.auth().signInWithRedirect(provider);
-            } else if (popupError.code === 'auth/popup-closed-by-user') {
-                // User closed popup, do nothing
-            } else {
-                throw popupError;
+            } catch (redirectErr) {
+                throw redirectErr;
             }
         }
     } catch (error) {
