@@ -201,7 +201,6 @@ const QRGenerator = {
 
                     this.qrCanvas.style.display = 'block';
                     this.downloadBtn.disabled = false;
-                    this.showNotification('QR Code generated successfully!', 'success');
                 } catch (drawError) {
                     document.body.removeChild(tempContainer);
                     throw drawError;
