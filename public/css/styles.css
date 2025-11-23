@@ -3062,6 +3062,8 @@ textarea.form-input {
     left: 20px;
     transform: translateY(-50%);
     width: 220px;
+    min-width: 150px;
+    max-width: 400px;
     background: rgba(11, 17, 32, 0.95);
     backdrop-filter: blur(20px);
     border: 2px solid rgba(6, 182, 212, 0.5);
@@ -3074,6 +3076,8 @@ textarea.form-input {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     cursor: move;
+    resize: both;
+    overflow: hidden;
 }
 
 .qr-floating-preview.show {
@@ -3085,6 +3089,26 @@ textarea.form-input {
 .qr-floating-preview.dragging {
     transition: none;
     cursor: grabbing;
+}
+
+.qr-floating-preview.resizing {
+    transition: none;
+}
+
+.qr-floating-preview .resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(6, 182, 212, 0.5) 50%);
+    border-bottom-right-radius: 14px;
+    z-index: 10;
+}
+
+.qr-floating-preview .resize-handle:hover {
+    background: linear-gradient(135deg, transparent 50%, rgba(6, 182, 212, 0.8) 50%);
 }
 
 .qr-floating-preview .floating-header {
@@ -3130,12 +3154,14 @@ textarea.form-input {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
 }
 
 .qr-floating-preview canvas {
     width: 100% !important;
     height: 100% !important;
     border-radius: 8px;
+    object-fit: contain;
 }
 
 html[data-theme="light"] .qr-floating-preview {

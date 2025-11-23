@@ -30,15 +30,17 @@ const QRGenerator = {
                 </button>
             </div>
             <div class="floating-qr-container">
-                <canvas id="floatingQRCanvas" width="196" height="196"></canvas>
+                <canvas id="floatingQRCanvas" width="400" height="400"></canvas>
             </div>
+            <div class="resize-handle"></div>
         `;
         document.body.appendChild(floatingPreview);
         this.floatingCanvas = document.getElementById('floatingQRCanvas');
         this.floatingPreview = floatingPreview;
         
-        // Make it draggable
+        // Make it draggable and resizable
         this.initDraggable();
+        this.initResizable();
     },
 
     initDraggable() {
@@ -111,6 +113,74 @@ const QRGenerator = {
         }
     },
 
+    initResizable() {
+        const preview = this.floatingPreview;
+        const resizeHandle = preview.querySelector('.resize-handle');
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+
+        resizeHandle.addEventListener('mousedown', initResize);
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+
+        // Touch events
+        resizeHandle.addEventListener('touchstart', initResize);
+        document.addEventListener('touchmove', resize);
+        document.addEventListener('touchend', stopResize);
+
+        function initResize(e) {
+            isResizing = true;
+            preview.classList.add('resizing');
+            
+            if (e.type === 'touchstart') {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+            
+            startWidth = preview.offsetWidth;
+            startHeight = preview.offsetHeight;
+            
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function resize(e) {
+            if (!isResizing) return;
+            
+            let clientX, clientY;
+            if (e.type === 'touchmove') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            const width = startWidth + (clientX - startX);
+            const height = startHeight + (clientY - startY);
+            
+            // Maintain aspect ratio by using the larger dimension
+            const size = Math.max(width, height);
+            
+            // Apply min/max constraints
+            if (size >= 150 && size <= 400) {
+                preview.style.width = size + 'px';
+            }
+            
+            e.preventDefault();
+        }
+
+        function stopResize(e) {
+            if (isResizing) {
+                isResizing = false;
+                preview.classList.remove('resizing');
+            }
+        }
+    },
+
     initScrollBehavior() {
         const qrPreviewCard = document.querySelector('.qr-preview-card');
         if (!qrPreviewCard) return;
@@ -139,8 +209,8 @@ const QRGenerator = {
         // Copy main canvas to floating canvas
         if (this.qrCanvas && this.floatingCanvas) {
             const ctx = this.floatingCanvas.getContext('2d');
-            ctx.clearRect(0, 0, 196, 196);
-            ctx.drawImage(this.qrCanvas, 0, 0, 196, 196);
+            ctx.clearRect(0, 0, 400, 400);
+            ctx.drawImage(this.qrCanvas, 0, 0, 400, 400);
         }
     },
 
