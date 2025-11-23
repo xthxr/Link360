@@ -176,8 +176,6 @@ function navigateToPage(page, updateHistory = true) {
         page = 'home';
     }
     
-    console.log('Navigating to page:', page);
-    
     currentPage = page;
     
     // Update browser URL without reloading
@@ -195,11 +193,7 @@ function navigateToPage(page, updateHistory = true) {
     
     // Update pages
     pages.forEach(p => {
-        const shouldShow = p.id === `${page}Page`;
-        p.style.display = shouldShow ? 'block' : 'none';
-        if (shouldShow) {
-            console.log('Showing page:', p.id);
-        }
+        p.style.display = p.id === `${page}Page` ? 'block' : 'none';
     });
     
     // Update title
@@ -220,18 +214,11 @@ function navigateToPage(page, updateHistory = true) {
     } else if (page === 'profile') {
         loadProfile();
     } else if (page === 'qr-generator') {
-        // QR Generator page - initialized by qr-generator.js
+        // QR Generator page
         setTimeout(() => {
-            if (window.QRGenerator) {
-                if (!window.QRGenerator.initialized) {
-                    console.log('Initializing QR Generator');
-                    window.QRGenerator.init();
-                    window.QRGenerator.initialized = true;
-                } else {
-                    console.log('QR Generator already initialized');
-                }
-            } else {
-                console.error('QRGenerator not found on window object');
+            if (window.QRGenerator && !window.QRGenerator.initialized) {
+                window.QRGenerator.init();
+                window.QRGenerator.initialized = true;
             }
         }, 100);
     }
@@ -493,12 +480,9 @@ async function initializeAuth() {
     // Check if user is authenticated
     const token = await getAuthToken();
     
-    console.log('initializeAuth - token exists:', !!token);
-    
     if (token) {
         try {
             const user = await getCurrentUser();
-            console.log('initializeAuth - user:', user ? user.email : 'null');
             if (user) {
                 currentUser = user;
                 showAuthenticatedUI();
@@ -506,18 +490,12 @@ async function initializeAuth() {
                 // Show app, hide landing
                 const landingPage = document.getElementById('landingPage');
                 const appContainer = document.getElementById('app');
-                console.log('initializeAuth - appContainer:', !!appContainer, 'landingPage:', !!landingPage);
                 if (landingPage) landingPage.style.display = 'none';
-                if (appContainer) {
-                    appContainer.style.display = 'flex';
-                    console.log('App container display set to flex');
-                }
+                if (appContainer) appContainer.style.display = 'flex';
                 
-                // Get current page from URL instead of localStorage
+                // Get current page from URL
                 const currentPath = window.location.pathname;
                 const currentPageFromUrl = currentPath.substring(1) || 'home';
-                
-                console.log('Current path:', currentPath, 'Page:', currentPageFromUrl);
                 
                 // Navigate to the current page
                 navigateToPage(currentPageFromUrl, false);
@@ -532,7 +510,6 @@ async function initializeAuth() {
                 } else if (currentPageFromUrl === 'qr-generator') {
                     setTimeout(() => {
                         if (window.QRGenerator && !window.QRGenerator.initialized) {
-                            console.log('Initializing QR Generator from auth');
                             window.QRGenerator.init();
                             window.QRGenerator.initialized = true;
                         }

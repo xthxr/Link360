@@ -32,19 +32,10 @@ const QRGenerator = {
         this.quickLinksGrid = document.getElementById('quickLinksGrid');
         this.downloadBgOptions = document.getElementById('downloadBgOptions');
         this.transparentOption = document.getElementById('transparentOption');
-        
-        console.log('QR Generator DOM cached:', {
-            qrLinkInput: !!this.qrLinkInput,
-            generateBtn: !!this.generateBtn,
-            qrCanvas: !!this.qrCanvas
-        });
     },
 
     bindEvents() {
-        if (!this.generateBtn || !this.qrLinkInput) {
-            console.error('Required elements not found');
-            return;
-        }
+        if (!this.generateBtn || !this.qrLinkInput) return;
         
         // Generate QR Code
         this.generateBtn.addEventListener('click', () => this.generateQR());
@@ -545,8 +536,3 @@ const QRGenerator = {
 if (typeof window !== 'undefined') {
     window.QRGenerator = QRGenerator;
 }
-
-// Auto-initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('QR Generator script loaded');
-});
