@@ -141,77 +141,93 @@ const QRGenerator = {
     async generateQR() {
         const link = this.qrLinkInput.value.trim();
         if (!link) {
-            alert('Please enter a link or text');
+            this.showNotification('Please enter a link or text', 'error');
             return;
         }
 
         this.currentLink = link;
         this.qrPlaceholder.style.display = 'none';
-        this.qrCanvas.style.display = 'block';
 
         try {
-            // Use QRCode library
+            // Check if QRCode library is loaded
             if (typeof QRCode === 'undefined') {
-                alert('QR Code library not loaded');
-                return;
+                throw new Error('QR Code library not loaded. Please refresh the page.');
             }
 
-            // Clear previous QR code
-            const container = document.getElementById('qrPreviewContainer');
-            const existingQR = container.querySelector('.qrcode-container');
-            if (existingQR) existingQR.remove();
+            // Get canvas context
+            const ctx = this.qrCanvas.getContext('2d');
+            ctx.clearRect(0, 0, this.qrCanvas.width, this.qrCanvas.height);
 
-            // Create container for QR code
-            const qrContainer = document.createElement('div');
-            qrContainer.className = 'qrcode-container';
-            qrContainer.style.display = 'inline-block';
-            container.insertBefore(qrContainer, this.qrCanvas);
-            this.qrCanvas.style.display = 'none';
+            // Set background
+            if (!(this.transparentBg?.checked && this.currentFormat === 'png')) {
+                ctx.fillStyle = this.currentBgColor || '#ffffff';
+                ctx.fillRect(0, 0, 400, 400);
+            }
 
-            // Generate QR code
-            new QRCode(qrContainer, {
+            // Create temporary container for QR generation
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            document.body.appendChild(tempContainer);
+
+            // Generate QR code using library
+            const qrCode = new QRCode(tempContainer, {
                 text: link,
                 width: 400,
                 height: 400,
-                colorDark: this.currentColor,
-                colorLight: this.transparentBg.checked && this.currentFormat === 'png' ? 'rgba(0,0,0,0)' : '#ffffff',
+                colorDark: this.currentColor || '#000000',
+                colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            // Wait for QR to render then draw to canvas
+            // Wait for QR code to render
             setTimeout(() => {
-                const qrImg = qrContainer.querySelector('img');
-                if (qrImg) {
-                    const ctx = this.qrCanvas.getContext('2d');
-                    ctx.clearRect(0, 0, this.qrCanvas.width, this.qrCanvas.height);
-                    
-                    // Set background
-                    if (!(this.transparentBg.checked && this.currentFormat === 'png')) {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, 400, 400);
+                try {
+                    const qrImg = tempContainer.querySelector('img');
+                    if (!qrImg) {
+                        throw new Error('QR image not generated');
                     }
-                    
-                    // Draw QR image
-                    ctx.drawImage(qrImg, 0, 0, 400, 400);
-                    
-                    // Apply pattern overlay if not square
-                    if (this.currentPattern !== 'square') {
-                        this.applyPatternOverlay(ctx);
-                    }
-                    
-                    // Apply frame
-                    if (this.currentFrame !== 'none') {
-                        this.applyFrame(ctx, 400);
-                    }
-                    
-                    this.qrCanvas.style.display = 'block';
-                }
-            }, 100);
 
-            this.downloadBtn.disabled = false;
+                    // Wait for image to load
+                    if (qrImg.complete) {
+                        this.drawQRToCanvas(ctx, qrImg);
+                        document.body.removeChild(tempContainer);
+                    } else {
+                        qrImg.onload = () => {
+                            this.drawQRToCanvas(ctx, qrImg);
+                            document.body.removeChild(tempContainer);
+                        };
+                    }
+
+                    this.qrCanvas.style.display = 'block';
+                    this.downloadBtn.disabled = false;
+                    this.showNotification('QR Code generated successfully!', 'success');
+                } catch (drawError) {
+                    document.body.removeChild(tempContainer);
+                    throw drawError;
+                }
+            }, 200);
+
         } catch (error) {
             console.error('QR generation error:', error);
-            alert('Failed to generate QR code');
+            this.showNotification(error.message || 'Failed to generate QR code', 'error');
+            this.qrPlaceholder.style.display = 'block';
+            this.qrPlaceholder.textContent = 'Failed to generate QR code. Please try again.';
+        }
+    },
+
+    drawQRToCanvas(ctx, qrImg) {
+        // Draw the QR code image
+        ctx.drawImage(qrImg, 0, 0, 400, 400);
+        
+        // Apply pattern overlay if not square (future enhancement)
+        // if (this.currentPattern !== 'square') {
+        //     this.applyPatternOverlay(ctx);
+        // }
+        
+        // Apply frame if selected
+        if (this.currentFrame && this.currentFrame !== 'none') {
+            this.applyFrame(ctx, 400);
         }
     },
 
