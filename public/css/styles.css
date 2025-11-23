@@ -3058,9 +3058,10 @@ textarea.form-input {
 /* Floating minimized QR preview */
 .qr-floating-preview {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 200px;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    width: 220px;
     background: rgba(11, 17, 32, 0.95);
     backdrop-filter: blur(20px);
     border: 2px solid rgba(6, 182, 212, 0.5);
@@ -3069,15 +3070,21 @@ textarea.form-input {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 1000;
     opacity: 0;
-    transform: translateY(100px);
+    transform: translateX(-300px) translateY(-50%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    cursor: move;
 }
 
 .qr-floating-preview.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0) translateY(-50%);
     pointer-events: auto;
+}
+
+.qr-floating-preview.dragging {
+    transition: none;
+    cursor: grabbing;
 }
 
 .qr-floating-preview .floating-header {
@@ -3085,6 +3092,12 @@ textarea.form-input {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    cursor: grab;
+    user-select: none;
+}
+
+.qr-floating-preview.dragging .floating-header {
+    cursor: grabbing;
 }
 
 .qr-floating-preview .floating-title {

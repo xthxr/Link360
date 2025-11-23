@@ -30,12 +30,85 @@ const QRGenerator = {
                 </button>
             </div>
             <div class="floating-qr-container">
-                <canvas id="floatingQRCanvas" width="176" height="176"></canvas>
+                <canvas id="floatingQRCanvas" width="196" height="196"></canvas>
             </div>
         `;
         document.body.appendChild(floatingPreview);
         this.floatingCanvas = document.getElementById('floatingQRCanvas');
         this.floatingPreview = floatingPreview;
+        
+        // Make it draggable
+        this.initDraggable();
+    },
+
+    initDraggable() {
+        const preview = this.floatingPreview;
+        const header = preview.querySelector('.floating-header');
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Touch events for mobile
+        header.addEventListener('touchstart', dragStart);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', dragEnd);
+
+        function dragStart(e) {
+            if (e.type === 'touchstart') {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+
+            if (e.target === header || header.contains(e.target)) {
+                if (!e.target.classList.contains('floating-close')) {
+                    isDragging = true;
+                    preview.classList.add('dragging');
+                }
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                if (e.type === 'touchmove') {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, preview);
+            }
+        }
+
+        function dragEnd(e) {
+            if (isDragging) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                preview.classList.remove('dragging');
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate(${xPos}px, calc(-50% + ${yPos}px))`;
+        }
     },
 
     initScrollBehavior() {
@@ -66,8 +139,8 @@ const QRGenerator = {
         // Copy main canvas to floating canvas
         if (this.qrCanvas && this.floatingCanvas) {
             const ctx = this.floatingCanvas.getContext('2d');
-            ctx.clearRect(0, 0, 176, 176);
-            ctx.drawImage(this.qrCanvas, 0, 0, 176, 176);
+            ctx.clearRect(0, 0, 196, 196);
+            ctx.drawImage(this.qrCanvas, 0, 0, 196, 196);
         }
     },
 
