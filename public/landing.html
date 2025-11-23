@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link360 - Hyper Analytics for All Your Links</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="stylesheet" href="landing-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="assets/logo.png" alt="Link360" class="nav-logo-image">
+                <div class="nav-logo-text-wrapper">
+                    <span class="nav-logo-text">Link360</span>
+                    <span class="nav-logo-credit">by XTHXR</span>
+                </div>
+            </a>
+            
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#analytics" class="nav-link">Analytics</a>
+                <a href="https://github.com/xthxr/Link360" target="_blank" class="nav-link">
+                    <i class="fab fa-github"></i>
+                    <span class="github-stars">10368</span>
+                </a>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <a href="/home" class="btn-primary">
+                    Get Started
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#features" class="mobile-nav-link">Features</a>
+        <a href="#analytics" class="mobile-nav-link">Analytics</a>
+        <a href="https://github.com/xthxr/Link360" target="_blank" class="mobile-nav-link">
+            <i class="fab fa-github"></i> GitHub
+        </a>
+        <a href="/home" class="btn-primary mobile-cta">Get Started</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span class="badge-text">Featured in Vercel OSS 2025</span>
+                <i class="fas fa-arrow-right"></i>
+            </div>
+            
+            <h1 class="hero-title">
+                A New Paradigm in <br>
+                <span class="gradient-text">Link Management</span>
+            </h1>
+            
+            <p class="hero-subtitle">
+                You're one 
+                <span class="step-badge">
+                    <i class="fas fa-rocket"></i> Step
+                </span> 
+                away from powerful real-time analytics. Build smarter links.
+            </p>
+            
+            <div class="hero-cta">
+                <button class="btn-hero-primary" onclick="window.location.href='/home'">
+                    <span>Get Started Free</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <a href="https://github.com/xthxr/Link360" target="_blank" class="btn-hero-secondary">
+                    <i class="fab fa-github"></i>
+                    View on GitHub
+                </a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">Free & Open Source</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-value">Real-time</div>
+                    <div class="stat-label">Live Analytics</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-value">Unlimited</div>
+                    <div class="stat-label">Short Links</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Animated Background -->
+        <div class="hero-bg">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <div class="section-header">
+                <h2 class="section-title">Powerful Features</h2>
+                <p class="section-subtitle">Everything you need for professional link management</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Real-time Analytics</h3>
+                    <p>Track clicks, devices, browsers, and referrers in real-time with zero latency updates.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h3>QR Code Generation</h3>
+                    <p>Instantly generate QR codes for all your short links with customizable designs.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h3>Custom Short Links</h3>
+                    <p>Create branded, memorable short links with custom aliases and domains.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Ultra-fast Performance</h3>
+                    <p>Built with Firebase for blazing-fast redirects and instant analytics updates.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h3>UTM Parameters</h3>
+                    <p>Add UTM parameters for detailed campaign tracking and marketing analytics.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Secure & Private</h3>
+                    <p>Your data is secure with Firebase authentication and industry-standard encryption.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Showcase -->
+    <section class="analytics-showcase" id="analytics">
+        <div class="analytics-container">
+            <div class="analytics-content">
+                <h2 class="analytics-title">
+                    <span class="gradient-text">Hyper Analytics</span> for All Your Links
+                </h2>
+                <p class="analytics-description">
+                    Get detailed insights into your link performance with real-time tracking, 
+                    device analytics, geographic data, and conversion metrics.
+                </p>
+                <ul class="analytics-features">
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Click tracking with timestamps</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Device & browser analytics</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Referrer source tracking</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>CTR & impression metrics</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>7-day comparison charts</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Export data as CSV</span>
+                    </li>
+                </ul>
+                <button class="btn-analytics" onclick="window.location.href='/home'">
+                    Start Tracking Now
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div class="analytics-visual">
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <span class="analytics-card-title">Link Performance</span>
+                        <span class="analytics-card-badge">Live</span>
+                    </div>
+                    <div class="analytics-metric">
+                        <div class="metric-value">24,567</div>
+                        <div class="metric-change positive">
+                            <i class="fas fa-arrow-up"></i> 12.5%
+                        </div>
+                    </div>
+                    <div class="analytics-chart">
+                        <div class="chart-bar" style="height: 40%"></div>
+                        <div class="chart-bar" style="height: 65%"></div>
+                        <div class="chart-bar" style="height: 50%"></div>
+                        <div class="chart-bar" style="height: 80%"></div>
+                        <div class="chart-bar" style="height: 70%"></div>
+                        <div class="chart-bar" style="height: 90%"></div>
+                        <div class="chart-bar" style="height: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2 class="cta-title">Ready to Get Started?</h2>
+            <p class="cta-description">
+                Join thousands of users managing their links with Link360. 
+                Free forever, no credit card required.
+            </p>
+            <div class="cta-buttons">
+                <button class="btn-cta-primary" onclick="window.location.href='/home'">
+                    Get Started Free
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <a href="https://github.com/xthxr/Link360" target="_blank" class="btn-cta-secondary">
+                    <i class="fab fa-github"></i>
+                    Star on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="assets/logo.png" alt="Link360" class="footer-logo-image">
+                    <div class="footer-logo-text-wrapper">
+                        <span class="footer-logo-text">Link360</span>
+                        <span class="footer-logo-credit">by XTHXR</span>
+                    </div>
+                </div>
+                <p class="footer-tagline">
+                    Free & Open Source URL Shortener with Real-time Analytics
+                </p>
+            </div>
+
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#analytics">Analytics</a>
+                    <a href="/home">Dashboard</a>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="https://github.com/xthxr/Link360" target="_blank">GitHub</a>
+                    <a href="https://github.com/xthxr/Link360/issues" target="_blank">Report Bug</a>
+                    <a href="https://github.com/xthxr/Link360#readme" target="_blank">Documentation</a>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Connect</h4>
+                    <a href="https://github.com/xthxr" target="_blank">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="mailto:atharakram@zohomail.in">
+                        <i class="fas fa-envelope"></i> Email
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Link360. Open Source under MIT License.</p>
+            <div class="footer-social">
+                <a href="https://github.com/xthxr/Link360" target="_blank">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+</html>
