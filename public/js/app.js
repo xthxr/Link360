@@ -1,5 +1,5 @@
 // ================================
-// MODERN LINK360 UI - APP LOGIC
+// MODERN PIIK.ME - APP LOGIC
 // ================================
 
 // Initialize Socket.IO
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeTheme() {
     // Check saved theme or use system preference
-    const savedTheme = localStorage.getItem('link360-theme');
+    const savedTheme = localStorage.getItem('piikme-theme');
     
     if (savedTheme) {
         setTheme(savedTheme);
@@ -138,7 +138,7 @@ function setTheme(theme) {
         btn.classList.toggle('active', btn.dataset.theme === theme);
     });
     
-    localStorage.setItem('link360-theme', theme);
+    localStorage.setItem('piikme-theme', theme);
 }
 
 // ================================
@@ -184,7 +184,7 @@ function navigateToPage(page, updateHistory = true) {
     }
     
     // Save current page to localStorage
-    localStorage.setItem('link360-current-page', page);
+    localStorage.setItem('piikme-current-page', page);
     
     // Update nav items
     navItems.forEach(item => {
@@ -204,7 +204,7 @@ function navigateToPage(page, updateHistory = true) {
         'qr-generator': 'QR Generator'
     };
     pageTitle.textContent = titles[page] || page;
-    document.title = `Link360 - ${titles[page] || page}`;
+    document.title = `piik.me - ${titles[page] || page}`;
     
     // Load page data
     if (page === 'home') {
@@ -451,7 +451,7 @@ async function handleGoogleLogin() {
             loginModal.style.display = 'none';
             
             // Restore last visited page or go to home
-            const savedPage = localStorage.getItem('link360-current-page') || 'home';
+            const savedPage = localStorage.getItem('piikme-current-page') || 'home';
             navigateToPage(savedPage);
             
         } catch (popupError) {
@@ -1305,7 +1305,7 @@ function downloadQR(shortCode) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `link360-qr-${shortCode}.png`;
+            a.download = `piikme-qr-${shortCode}.png`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('QR code downloaded!', 'success');
