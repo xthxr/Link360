@@ -3866,18 +3866,18 @@ html[data-theme="dark"] .view-toggle-btn.active {
 
 .globe-location-item:hover {
     background: var(--bg-secondary);
-    border-color: #10b981;
+    border-color: #fbbf24;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
 }
 
 .location-marker {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #10b981;
+    background: #fbbf24;
     flex-shrink: 0;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2);
 }
 
 .location-info {
@@ -3903,17 +3903,17 @@ html[data-theme="dark"] .view-toggle-btn.active {
 .location-clicks {
     font-size: 18px;
     font-weight: 700;
-    color: #10b981;
+    color: #f59e0b;
     flex-shrink: 0;
 }
 
 /* Globe container styling */
 .analytics-card #globeViz {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
 html[data-theme="dark"] .analytics-card #globeViz {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
 /* Scrollbar styling for locations list */

@@ -102,31 +102,39 @@ async function initializeGlobe() {
     // Clear container
     container.innerHTML = '';
     
-    // Create globe instance with Shopify-like styling
+    // Load countries GeoJSON for hexagon patterns
+    const countriesData = await fetch('/countries.geojson').then(res => res.json());
+    
+    // Create globe instance with hexagonal land patterns
     globeInstance = Globe()
         (container)
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-        .backgroundColor('rgba(255,255,255,0)')
+        .globeMaterial(new THREE.MeshPhongMaterial({
+            color: 'rgb(228, 228, 231)',
+            transparent: false,
+            opacity: 1
+        }))
+        .backgroundColor('rgba(0,0,0,0)')
         .showAtmosphere(true)
-        .atmosphereColor('#3b82f6')
-        .atmosphereAltitude(0.12)
+        .atmosphereColor('rgba(170, 170, 200, 0.8)')
+        .atmosphereAltitude(0.15)
+        .hexPolygonsData(countriesData.features)
+        .hexPolygonResolution(3)
+        .hexPolygonMargin(0.62)
+        .hexPolygonUseDots(false)
+        .hexPolygonColor(() => `rgba(16, 185, 129, ${Math.random() * 0.4 + 0.6})`)
+        .hexPolygonAltitude(0.001)
         .pointsData([])
-        .pointAltitude(0.005)
-        .pointColor(() => '#10b981')
-        .pointRadius(d => d.size || 0.5)
+        .pointAltitude(0.01)
+        .pointColor(() => '#fbbf24')
+        .pointRadius(d => d.size || 0.6)
         .pointsMerge(true)
         .pointLabel(d => `
             <div style="background: white; padding: 12px 16px; border-radius: 10px; color: #1a1a1a; font-family: 'Inter', sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid #e5e7eb;">
                 <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #111;">${d.city}, ${d.region}</div>
                 <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">${d.country}</div>
-                <div style="font-size: 15px; font-weight: 700; color: #10b981;">${d.clicks} visit${d.clicks > 1 ? 's' : ''}</div>
+                <div style="font-size: 15px; font-weight: 700; color: #f59e0b;">${d.clicks} visit${d.clicks > 1 ? 's' : ''}</div>
             </div>
-        `)
-        .hexPolygonsData([])
-        .hexPolygonResolution(3)
-        .hexPolygonMargin(0.3)
-        .hexPolygonColor(() => 'rgba(59, 130, 246, 0.15)');
+        `);
     
     // Configure controls for smooth interaction
     const controls = globeInstance.controls();
@@ -137,7 +145,7 @@ async function initializeGlobe() {
     controls.minDistance = 180;
     controls.maxDistance = 500;
     
-    // Set initial view - centered and zoomed appropriately
+    // Set initial view - centered
     globeInstance.pointOfView({ 
         lat: 0, 
         lng: 0, 
