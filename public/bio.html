@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio Link</title>
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
+    <meta property="og:image" content="">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="">
+    <meta name="twitter:description" content="">
+    <meta name="twitter:image" content="">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body.solid {
+            background: #1a1a2e;
+        }
+
+        body.dots {
+            background: #1a1a2e;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .bio-container {
+            max-width: 680px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 48px 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bio-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .bio-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            border: 4px solid #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .bio-avatar-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            border: 4px solid #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+
+        .bio-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+        }
+
+        .bio-description {
+            font-size: 16px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .bio-social {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .social-link {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4b5563;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .social-link:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            color: #1a1a2e;
+        }
+
+        .bio-links {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .bio-link-item {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 18px 24px;
+            text-align: center;
+            text-decoration: none;
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bio-link-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .bio-link-item:hover {
+            border-color: currentColor;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .bio-link-item:hover::before {
+            left: 100%;
+        }
+
+        .bio-footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .powered-by {
+            color: #9ca3af;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .powered-by a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .powered-by a:hover {
+            color: #4f46e5;
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .error-icon {
+            font-size: 64px;
+            color: #ef4444;
+            margin-bottom: 24px;
+        }
+
+        .error-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+        }
+
+        .error-message {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .error-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #6366f1;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .error-button:hover {
+            background: #4f46e5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 640px) {
+            .bio-container {
+                padding: 32px 24px;
+            }
+
+            .bio-name {
+                font-size: 24px;
+            }
+
+            .bio-description {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bio-container">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="color: #6b7280;">Loading bio link...</p>
+        </div>
+
+        <div id="bioContent" style="display: none;">
+            <!-- Content will be injected here -->
+        </div>
+
+        <div id="errorContent" style="display: none;">
+            <div class="error-container">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h1 class="error-title">Bio Link Not Found</h1>
+                <p class="error-message">This bio link doesn't exist or has been removed.</p>
+                <a href="/" class="error-button">
+                    <i class="fas fa-home"></i> Go to Homepage
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/firebase-config.js"></script>
+    <script>
+        // Get slug from URL
+        const pathParts = window.location.pathname.split('/');
+        const slug = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+
+        async function loadBioLink() {
+            try {
+                if (!slug) {
+                    showError();
+                    return;
+                }
+
+                const db = firebase.firestore();
+                const bioLinksSnapshot = await db.collection('bioLinks')
+                    .where('slug', '==', slug)
+                    .limit(1)
+                    .get();
+
+                if (bioLinksSnapshot.empty) {
+                    showError();
+                    return;
+                }
+
+                const bioLinkDoc = bioLinksSnapshot.docs[0];
+                const bioLink = bioLinkDoc.data();
+
+                // Track view
+                await db.collection('bioLinks').doc(bioLinkDoc.id).update({
+                    views: firebase.firestore.FieldValue.increment(1)
+                });
+
+                // Update meta tags
+                document.title = bioLink.name;
+                document.querySelector('meta[property="og:title"]').content = bioLink.name;
+                document.querySelector('meta[name="twitter:title"]').content = bioLink.name;
+                
+                if (bioLink.description) {
+                    document.querySelector('meta[property="og:description"]').content = bioLink.description;
+                    document.querySelector('meta[name="twitter:description"]').content = bioLink.description;
+                }
+                
+                if (bioLink.profilePicture) {
+                    document.querySelector('meta[property="og:image"]').content = bioLink.profilePicture;
+                    document.querySelector('meta[name="twitter:image"]').content = bioLink.profilePicture;
+                }
+
+                // Set background style
+                document.body.className = bioLink.backgroundStyle || 'gradient';
+                if (bioLink.backgroundStyle === 'gradient' && bioLink.themeColor) {
+                    const rgb = hexToRgb(bioLink.themeColor);
+                    document.body.style.background = `linear-gradient(135deg, ${bioLink.themeColor} 0%, rgb(${rgb.r * 0.7}, ${rgb.g * 0.7}, ${rgb.b * 0.7}) 100%)`;
+                }
+
+                // Render bio link
+                renderBioLink(bioLink);
+
+            } catch (error) {
+                console.error('Error loading bio link:', error);
+                showError();
+            }
+        }
+
+        function renderBioLink(bioLink) {
+            const bioContent = document.getElementById('bioContent');
+            const themeColor = bioLink.themeColor || '#06b6d4';
+
+            let html = '<div class="bio-header">';
+
+            // Profile picture
+            if (bioLink.profilePicture) {
+                html += `<img src="${bioLink.profilePicture}" alt="${bioLink.name}" class="bio-avatar">`;
+            } else {
+                html += `<div class="bio-avatar-placeholder" style="background: ${themeColor};">
+                    <i class="fas fa-user"></i>
+                </div>`;
+            }
+
+            // Name and description
+            html += `<h1 class="bio-name">${bioLink.name}</h1>`;
+            if (bioLink.description) {
+                html += `<p class="bio-description">${bioLink.description}</p>`;
+            }
+
+            // Social links
+            const social = bioLink.social || {};
+            const socialLinks = [];
+            
+            if (social.instagram) socialLinks.push({ icon: 'fab fa-instagram', url: `https://instagram.com/${social.instagram}` });
+            if (social.twitter) socialLinks.push({ icon: 'fab fa-twitter', url: `https://twitter.com/${social.twitter}` });
+            if (social.linkedin) socialLinks.push({ icon: 'fab fa-linkedin', url: social.linkedin.startsWith('http') ? social.linkedin : `https://linkedin.com/in/${social.linkedin}` });
+            if (social.github) socialLinks.push({ icon: 'fab fa-github', url: `https://github.com/${social.github}` });
+            if (social.youtube) socialLinks.push({ icon: 'fab fa-youtube', url: social.youtube.startsWith('http') ? social.youtube : `https://youtube.com/@${social.youtube}` });
+            if (social.website) socialLinks.push({ icon: 'fas fa-globe', url: social.website.startsWith('http') ? social.website : `https://${social.website}` });
+
+            if (socialLinks.length > 0) {
+                html += '<div class="bio-social">';
+                socialLinks.forEach(link => {
+                    html += `<a href="${link.url}" class="social-link" target="_blank" rel="noopener noreferrer" style="color: ${themeColor};">
+                        <i class="${link.icon}"></i>
+                    </a>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            // Links
+            if (bioLink.links && bioLink.links.length > 0) {
+                html += '<div class="bio-links">';
+                bioLink.links.forEach((link, index) => {
+                    html += `<a href="${link.url}" class="bio-link-item" target="_blank" rel="noopener noreferrer" 
+                             style="border-color: ${themeColor}; color: ${themeColor};"
+                             onclick="trackClick('${bioLink.slug}', ${index})">
+                        ${link.title}
+                    </a>`;
+                });
+                html += '</div>';
+            }
+
+            // Footer
+            html += `
+                <div class="bio-footer">
+                    <div class="powered-by">
+                        <span>Powered by</span>
+                        <a href="/" target="_blank">Zaplink</a>
+                    </div>
+                </div>
+            `;
+
+            bioContent.innerHTML = html;
+            document.getElementById('loading').style.display = 'none';
+            bioContent.style.display = 'block';
+        }
+
+        async function trackClick(slug, linkIndex) {
+            try {
+                const db = firebase.firestore();
+                const bioLinksSnapshot = await db.collection('bioLinks')
+                    .where('slug', '==', slug)
+                    .limit(1)
+                    .get();
+
+                if (!bioLinksSnapshot.empty) {
+                    const bioLinkDoc = bioLinksSnapshot.docs[0];
+                    await db.collection('bioLinks').doc(bioLinkDoc.id).update({
+                        clicks: firebase.firestore.FieldValue.increment(1)
+                    });
+                }
+            } catch (error) {
+                console.error('Error tracking click:', error);
+            }
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorContent').style.display = 'block';
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 6, g: 182, b: 212 };
+        }
+
+        // Load bio link on page load
+        loadBioLink();
+    </script>
+</body>
+</html>

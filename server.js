@@ -482,6 +482,11 @@ app.get(['/home', '/analytics', '/profile', '/qr-generator'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Bio link route
+app.get('/bio/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'bio.html'));
+});
+
 // Track impression without redirect (for link previews - HEAD request)
 app.head('/:shortCode', async (req, res) => {
   const { shortCode } = req.params;
