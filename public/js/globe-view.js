@@ -151,7 +151,7 @@ async function initializeGlobe() {
         
         // Configure controls for smooth interaction
         const controls = globeInstance.controls();
-        controls.autoRotate = true;
+        controls.autoRotate = false;
         controls.autoRotateSpeed = 0.3;
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;

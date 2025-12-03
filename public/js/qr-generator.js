@@ -658,11 +658,9 @@ const QRGenerator = {
 
             const db = firebase.firestore();
             
-            // First, try to get all user links without active filter
+            // Get user links - sort on client side to avoid index requirement
             const linksSnapshot = await db.collection('links')
                 .where('userId', '==', user.uid)
-                .orderBy('createdAt', 'desc')
-                .limit(6)
                 .get();
 
             if (linksSnapshot.empty) {
@@ -676,9 +674,22 @@ const QRGenerator = {
                 return;
             }
 
-            this.quickLinksGrid.innerHTML = '';
+            // Sort links by creation date (most recent first) and limit to 6
+            const links = [];
             linksSnapshot.forEach(doc => {
-                const link = doc.data();
+                links.push({ id: doc.id, ...doc.data() });
+            });
+            
+            links.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB - dateA;
+            });
+            
+            const recentLinks = links.slice(0, 6);
+
+            this.quickLinksGrid.innerHTML = '';
+            recentLinks.forEach(link => {
                 const btn = document.createElement('button');
                 btn.className = 'quick-link-btn';
                 
