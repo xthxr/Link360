@@ -29,6 +29,10 @@
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
+            <a href="/bio-link" class="nav-item" data-page="bio-link">
+                <i class="fas fa-link"></i>
+                <span>Bio Link</span>
+            </a>
             <a href="/qr-generator" class="nav-item" data-page="qr-generator">
                 <i class="fas fa-qrcode"></i>
                 <span>QR Generator</span>
@@ -737,6 +741,78 @@
                 </div><!-- End Click Details Container -->
             </section>
 
+            <!-- Bio Link Page -->
+            <section class="page" id="bio-linkPage" style="display: none;">
+                <div class="page-header">
+                    <div class="header-content">
+                        <h2>Bio Link</h2>
+                        <p class="header-subtitle">Create a custom link-in-bio page with multiple links</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="createBioLinkBtn">
+                            <i class="fas fa-plus"></i> Create Bio Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bio Link Stats -->
+                <div class="stats-grid" style="margin-bottom: 24px;">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalBioLinks">0</span>
+                            <span class="stat-label">Bio Links</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalBioViews">0</span>
+                            <span class="stat-label">Total Views</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalBioClicks">0</span>
+                            <span class="stat-label">Link Clicks</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="avgBioCTR">0%</span>
+                            <span class="stat-label">Avg CTR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bio Links Grid -->
+                <div class="bio-links-container" id="bioLinksContainer">
+                    <!-- Bio links will be populated here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="bioLinksEmptyState" style="display: none;">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h3>No bio links yet</h3>
+                    <p>Create your first bio link page to showcase all your important links in one place</p>
+                    <button class="btn btn-primary" id="createFirstBioBtn">
+                        <i class="fas fa-plus"></i> Create Your First Bio Link
+                    </button>
+                </div>
+            </section>
+
             <!-- Profile Page -->
             <section class="page" id="profilePage" style="display: none;">
                 <div class="page-header">
@@ -973,6 +1049,122 @@
         </div>
     </div>
 
+    <!-- Bio Link Modal -->
+    <div class="modal" id="bioLinkModal" style="display: none;">
+        <div class="modal-overlay" id="bioLinkModalOverlay"></div>
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="bioLinkModalTitle">Create Bio Link</h3>
+                <button class="modal-close" id="bioLinkModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Bio Link Basic Info -->
+                <div class="form-section">
+                    <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                    <div class="form-group">
+                        <label>Bio Link Name *</label>
+                        <input type="text" class="form-input" id="bioLinkName" placeholder="My Social Links">
+                    </div>
+                    <div class="form-group">
+                        <label>Custom URL Slug *</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--text-tertiary);">piik.me/bio/</span>
+                            <input type="text" class="form-input" id="bioLinkSlug" placeholder="yourname" pattern="[a-zA-Z0-9-_]+" style="flex: 1;">
+                        </div>
+                        <small style="color: var(--text-tertiary); font-size: 12px; margin-top: 4px; display: block;">
+                            Only letters, numbers, hyphens, and underscores
+                        </small>
+                        <div id="bioSlugError" style="color: var(--accent-red); font-size: 12px; margin-top: 4px; display: none;"></div>
+                        <div id="bioSlugSuccess" style="color: var(--accent-green); font-size: 12px; margin-top: 4px; display: none;">
+                            ✓ URL is available!
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description (Optional)</label>
+                        <textarea class="form-input" id="bioLinkDescription" placeholder="A short bio about yourself" rows="3" maxlength="200"></textarea>
+                        <small style="color: var(--text-tertiary); font-size: 12px;"><span id="bioDescCount">0</span>/200</small>
+                    </div>
+                </div>
+
+                <!-- Links Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-link"></i> Links</h4>
+                    <div id="bioLinksListContainer">
+                        <!-- Links will be added here dynamically -->
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="addBioLinkItemBtn" style="margin-top: 12px;">
+                        <i class="fas fa-plus"></i> Add Link
+                    </button>
+                </div>
+
+                <!-- Appearance -->
+                <div class="form-section">
+                    <h4><i class="fas fa-palette"></i> Appearance</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Profile Picture URL (Optional)</label>
+                            <input type="url" class="form-input" id="bioProfilePicture" placeholder="https://example.com/photo.jpg">
+                        </div>
+                        <div class="form-group">
+                            <label>Theme Color</label>
+                            <div class="color-input-group">
+                                <input type="color" id="bioThemeColor" value="#06b6d4">
+                                <input type="text" class="form-input color-hex" id="bioThemeColorHex" value="#06b6d4">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Background Style</label>
+                        <select class="form-input" id="bioBackgroundStyle">
+                            <option value="gradient">Gradient</option>
+                            <option value="solid">Solid Color</option>
+                            <option value="image">Background Image</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="form-section">
+                    <h4><i class="fas fa-share-alt"></i> Social Links (Optional)</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fab fa-instagram"></i> Instagram</label>
+                            <input type="text" class="form-input" id="bioInstagram" placeholder="@username">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-twitter"></i> Twitter</label>
+                            <input type="text" class="form-input" id="bioTwitter" placeholder="@username">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-linkedin"></i> LinkedIn</label>
+                            <input type="url" class="form-input" id="bioLinkedIn" placeholder="https://linkedin.com/in/username">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-github"></i> GitHub</label>
+                            <input type="text" class="form-input" id="bioGithub" placeholder="username">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-youtube"></i> YouTube</label>
+                            <input type="url" class="form-input" id="bioYoutube" placeholder="https://youtube.com/@username">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-globe"></i> Website</label>
+                            <input type="url" class="form-input" id="bioWebsite" placeholder="https://yourwebsite.com">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="bioLinkModalCancel">Cancel</button>
+                <button class="btn btn-primary" id="saveBioLinkBtn">
+                    <i class="fas fa-save"></i> Save Bio Link
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Landing Page (shown when not authenticated) -->
     <div class="landing-page" id="landingPage" style="display: none;">
         <!-- Navigation -->
@@ -1103,6 +1295,7 @@
     <!-- App Scripts -->
     <script src="js/qr-generator.js"></script>
     <script src="js/globe-view.js"></script>
+    <script src="js/bio-link.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

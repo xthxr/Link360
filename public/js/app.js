@@ -202,7 +202,8 @@ function navigateToPage(page, updateHistory = true) {
         analytics: 'Analytics',
         profile: 'Profile',
         'qr-generator': 'QR Generator',
-        'geo-details': 'Geographic Details'
+        'geo-details': 'Geographic Details',
+        'bio-link': 'Bio Link'
     };
     pageTitle.textContent = titles[page] || page;
     document.title = `piik.me - ${titles[page] || page}`;
@@ -224,6 +225,10 @@ function navigateToPage(page, updateHistory = true) {
         }, 100);
     } else if (page === 'geo-details') {
         loadDetailedGeographicData();
+    } else if (page === 'bio-link') {
+        if (typeof initBioLink === 'function') {
+            initBioLink();
+        }
     }
     
     // Close sidebar on mobile
