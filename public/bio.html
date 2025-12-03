@@ -325,17 +325,22 @@
         async function loadBioLink() {
             try {
                 if (!slug) {
+                    console.error('No slug found in URL');
                     showError();
                     return;
                 }
 
+                console.log('Loading bio link for slug:', slug);
                 const db = firebase.firestore();
                 const bioLinksSnapshot = await db.collection('bioLinks')
                     .where('slug', '==', slug)
                     .limit(1)
                     .get();
 
+                console.log('Query results:', bioLinksSnapshot.empty ? 'empty' : bioLinksSnapshot.docs.length + ' docs found');
+
                 if (bioLinksSnapshot.empty) {
+                    console.error('No bio link found with slug:', slug);
                     showError();
                     return;
                 }
