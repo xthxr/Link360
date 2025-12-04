@@ -536,16 +536,26 @@ document.addEventListener('DOMContentLoaded', () => {
             // Validate file type
             if (!file.type.startsWith('image/')) {
                 showToast('Please select a valid image file', 'error');
+                e.target.value = '';
                 return;
             }
 
-            // Validate file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Image size must be less than 5MB', 'error');
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image size must be less than 2MB', 'error');
+                e.target.value = '';
                 return;
             }
 
             try {
+                // Check if user is authenticated
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    showToast('Please log in to upload images', 'error');
+                    e.target.value = '';
+                    return;
+                }
+
                 // Show loading state
                 const uploadBtn = e.target.previousElementSibling;
                 const originalText = uploadBtn.innerHTML;
@@ -556,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const storage = firebase.storage();
                 const storageRef = storage.ref();
                 const fileExtension = file.name.split('.').pop();
-                const fileName = `bio-profiles/${currentUser.uid}/${Date.now()}.${fileExtension}`;
+                const fileName = `bio-profiles/${user.uid}/${Date.now()}.${fileExtension}`;
                 const fileRef = storageRef.child(fileName);
 
                 await fileRef.put(file);
@@ -576,7 +586,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (error) {
                 console.error('Error uploading profile picture:', error);
-                showToast('Failed to upload profile picture', 'error');
+                showToast(`Failed to upload: ${error.message || 'Unknown error'}`, 'error');
+                
+                // Reset file input
+                e.target.value = '';
                 
                 // Reset button
                 const uploadBtn = e.target.previousElementSibling;
