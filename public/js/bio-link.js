@@ -766,6 +766,7 @@ function setupLivePreviewListeners() {
     const bgStyleEl = document.getElementById('editorBackgroundStyle');
     if (bgStyleEl) {
         bgStyleEl.addEventListener('change', () => {
+            updateLivePreview(); // Update preview when background style changes
             triggerAutoSave();
         });
     }
@@ -904,6 +905,7 @@ function updateLivePreview() {
     const description = document.getElementById('editorBioDescription')?.value || 'Your bio description';
     const themeColor = document.getElementById('editorThemeColor')?.value || '#06b6d4';
     const profilePicture = document.getElementById('editorProfilePicture')?.value;
+    const backgroundStyle = document.getElementById('editorBackgroundStyle')?.value || 'gradient';
     
     const previewName = document.getElementById('previewName');
     const previewDescription = document.getElementById('previewDescription');
@@ -931,11 +933,32 @@ function updateLivePreview() {
         previewAvatar.innerHTML = '<i class="fas fa-user"></i>';
     }
     
-    // Update background - use gradient for container, not blur
-    preview.style.background = `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`;
-    preview.style.backgroundImage = 'none';
+    // Update background based on style selection
     preview.style.filter = 'none';
     preview.style.transform = 'none';
+    
+    if (backgroundStyle === 'gradient') {
+        // Gradient background
+        preview.style.background = `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`;
+        preview.style.backgroundImage = '';
+    } else if (backgroundStyle === 'solid') {
+        // Solid color background
+        preview.style.background = themeColor;
+        preview.style.backgroundImage = '';
+    } else if (backgroundStyle === 'image') {
+        // Background image with blur effect (if profile picture is available)
+        if (profilePicture) {
+            preview.style.background = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(${profilePicture})`;
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+            preview.style.filter = 'blur(0px)'; // No blur on container
+            preview.style.position = 'relative';
+        } else {
+            // Fallback to gradient if no image
+            preview.style.background = `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`;
+            preview.style.backgroundImage = '';
+        }
+    }
     
     // Update social links preview
     if (previewSocial) {

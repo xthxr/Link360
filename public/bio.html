@@ -432,18 +432,23 @@
                 }
 
                 // Set background style
-                document.body.className = bioLink.backgroundStyle || 'gradient';
+                const backgroundStyle = bioLink.backgroundStyle || 'gradient';
+                const themeColor = bioLink.themeColor || '#06b6d4';
                 
-                // Apply blurred profile picture background if available
-                if (bioLink.profilePicture) {
+                if (backgroundStyle === 'gradient') {
+                    // Gradient background
+                    const rgb = hexToRgb(themeColor);
+                    document.body.style.background = `linear-gradient(135deg, ${themeColor} 0%, rgb(${Math.floor(rgb.r * 0.7)}, ${Math.floor(rgb.g * 0.7)}, ${Math.floor(rgb.b * 0.7)}) 100%)`;
+                } else if (backgroundStyle === 'solid') {
+                    // Solid color background
+                    document.body.style.background = themeColor;
+                } else if (backgroundStyle === 'image' && bioLink.profilePicture) {
+                    // Background image with blur effect
                     const backgroundBlur = document.getElementById('backgroundBlur');
                     backgroundBlur.style.backgroundImage = `url(${bioLink.profilePicture})`;
                     setTimeout(() => {
                         backgroundBlur.classList.add('active');
                     }, 100);
-                } else if (bioLink.backgroundStyle === 'gradient' && bioLink.themeColor) {
-                    const rgb = hexToRgb(bioLink.themeColor);
-                    document.body.style.background = `linear-gradient(135deg, ${bioLink.themeColor} 0%, rgb(${rgb.r * 0.7}, ${rgb.g * 0.7}, ${rgb.b * 0.7}) 100%)`;
                 }
 
                 // Render bio link
