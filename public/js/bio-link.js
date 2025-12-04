@@ -10,14 +10,23 @@ let bioLinkItems = [];
 function initBioLink() {
     console.log('Initializing Bio Link module');
     
-    // Check if user is authenticated
-    if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
+    // Wait for Firebase to be ready
+    if (typeof firebase === 'undefined') {
+        console.error('Firebase not loaded');
+        setTimeout(initBioLink, 500);
+        return;
+    }
+
+    // Check current auth state
+    const user = firebase.auth().currentUser;
+    if (user) {
         loadBioLinks();
     } else {
-        // Wait for auth to complete
-        setTimeout(() => {
-            if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
+        // Wait for auth state to be established
+        const unsubscribe = firebase.auth().onAuthStateChanged((authUser) => {
+            if (authUser) {
                 loadBioLinks();
+                unsubscribe(); // Stop listening after first load
             } else {
                 console.log('User not authenticated for bio links');
                 const container = document.getElementById('bioLinksContainer');
@@ -33,8 +42,9 @@ function initBioLink() {
                         <p>You need to be logged in to create bio links</p>
                     `;
                 }
+                unsubscribe();
             }
-        }, 1000);
+        });
     }
 }
 
@@ -42,24 +52,31 @@ function initBioLink() {
 async function loadBioLinks() {
     try {
         if (typeof firebase === 'undefined' || !firebase.firestore) {
-            console.log('Firebase not ready');
+            console.error('Firebase not ready');
+            showToast('Firebase not initialized', 'error');
             return;
         }
 
-        if (!currentUser || !currentUser.uid) {
-            console.log('User not authenticated');
+        const user = firebase.auth().currentUser;
+        if (!user || !user.uid) {
+            console.error('User not authenticated');
+            showToast('Please log in to view bio links', 'error');
             return;
         }
+
+        console.log('Loading bio links for user:', user.uid);
 
         const db = firebase.firestore();
         const bioLinksSnapshot = await db.collection('bioLinks')
-            .where('userId', '==', currentUser.uid)
+            .where('userId', '==', user.uid)
             .get();
 
         bioLinks = [];
         bioLinksSnapshot.forEach(doc => {
             bioLinks.push({ id: doc.id, ...doc.data() });
         });
+
+        console.log('Loaded', bioLinks.length, 'bio links');
 
         // Sort by creation date (most recent first)
         bioLinks.sort((a, b) => {
@@ -73,7 +90,7 @@ async function loadBioLinks() {
 
     } catch (error) {
         console.error('Error loading bio links:', error);
-        showToast('Failed to load bio links', 'error');
+        showToast('Failed to load bio links: ' + (error.message || 'Unknown error'), 'error');
     }
 }
 
