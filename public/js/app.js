@@ -832,6 +832,9 @@ async function handleCreateLink() {
     
     try {
         const token = await getAuthToken();
+        console.log('Creating link with token:', token ? 'Token obtained' : 'No token');
+        console.log('Current user:', currentUser);
+        
         const response = await fetch('/api/shorten', {
             method: 'POST',
             headers: {
@@ -847,6 +850,7 @@ async function handleCreateLink() {
         });
         
         const data = await response.json();
+        console.log('Link creation response:', data);
         
         if (data.success) {
             showToast('Link created successfully!', 'success');
@@ -872,61 +876,45 @@ async function loadLinks() {
             return;
         }
         
-        if (typeof firebase === 'undefined' || !firebase.firestore) {
-            showToast('Firestore not available', 'error');
+        console.log('Loading links for user:', currentUser.uid);
+        
+        // Fetch links from API instead of directly from Firestore
+        const token = await getAuthToken();
+        if (!token) {
+            console.error('No auth token available');
+            showToast('Authentication required', 'error');
             return;
         }
         
-        const db = firebase.firestore();
+        const response = await fetch('/api/user/links', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
-        // Set up real-time listener for links
-        if (window.linksUnsubscribe) {
-            window.linksUnsubscribe();
+        if (!response.ok) {
+            throw new Error('Failed to fetch links');
         }
         
-        window.linksUnsubscribe = db.collection('links')
-            .where('userId', '==', currentUser.uid)
-            .onSnapshot(async (snapshot) => {
-                userLinks = [];
-                
-                for (const doc of snapshot.docs) {
-                    const linkData = doc.data();
-                    
-                    // Get analytics data for this link (single document per link)
-                    const analyticsDoc = await db.collection('analytics').doc(linkData.shortCode).get();
-                    const analyticsData = analyticsDoc.exists ? analyticsDoc.data() : { clicks: 0 };
-                    
-                    userLinks.push({
-                        ...linkData,
-                        clicks: analyticsData.clicks || 0,
-                        id: doc.id
-                    });
-                }
-                
-                // Sort by createdAt in memory (newest first)
-                userLinks.sort((a, b) => {
-                    const dateA = a.createdAt?.toDate?.() || new Date(0);
-                    const dateB = b.createdAt?.toDate?.() || new Date(0);
-                    return dateB - dateA;
-                });
-                
-                if (userLinks.length > 0) {
-                    displayLinks(userLinks);
-                    updateStats(userLinks);
-                    emptyState.style.display = 'none';
-                    linksContainer.style.display = 'grid';
-                } else {
-                    emptyState.style.display = 'block';
-                    linksContainer.style.display = 'none';
-                }
-            }, (error) => {
-                console.error('Error loading links:', error);
-                showToast('Failed to load links: ' + error.message, 'error');
-            });
+        const data = await response.json();
+        console.log('Links fetched from API:', data);
+        
+        userLinks = data.links || [];
+        
+        if (userLinks.length > 0) {
+            displayLinks(userLinks);
+            updateStats(userLinks);
+            emptyState.style.display = 'none';
+            linksContainer.style.display = 'grid';
+        } else {
+            emptyState.style.display = 'block';
+            linksContainer.style.display = 'none';
+        }
         
     } catch (error) {
-        console.error('Error setting up links listener:', error);
-        showToast('Failed to load links', 'error');
+        console.error('Error loading links:', error);
+        showToast('Failed to load links: ' + error.message, 'error');
     }
 }
 
@@ -2472,8 +2460,22 @@ if (document.getElementById('exportGeoDataBtn')) {
 // UTILITY FUNCTIONS
 // ================================
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
+function formatDate(dateInput) {
+    let date;
+    
+    // Handle Firestore Timestamp
+    if (dateInput && typeof dateInput.toDate === 'function') {
+        date = dateInput.toDate();
+    } 
+    // Handle server timestamp object with _seconds
+    else if (dateInput && dateInput._seconds) {
+        date = new Date(dateInput._seconds * 1000);
+    }
+    // Handle regular date string or timestamp
+    else {
+        date = new Date(dateInput);
+    }
+    
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

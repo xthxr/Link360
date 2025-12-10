@@ -220,8 +220,12 @@ app.post('/api/shorten', verifyToken, async (req, res) => {
 
   try {
     // Save to Firestore
+    console.log('Saving link to Firestore:', { shortCode, userId });
     await db.collection(COLLECTIONS.LINKS).doc(shortCode).set(linkData);
+    console.log('Link saved successfully');
+    
     await db.collection(COLLECTIONS.ANALYTICS).doc(shortCode).set(analyticsData);
+    console.log('Analytics saved successfully');
     
     res.json({
       success: true,
@@ -305,20 +309,28 @@ app.get('/api/user/links', verifyToken, async (req, res) => {
     for (const doc of linksSnapshot.docs) {
       const linkData = doc.data();
       const analyticsDoc = await db.collection(COLLECTIONS.ANALYTICS).doc(linkData.shortCode).get();
+      const analyticsData = analyticsDoc.exists ? analyticsDoc.data() : {
+        impressions: 0,
+        clicks: 0,
+        shares: 0
+      };
       
       userLinks.push({
         ...linkData,
-        analytics: analyticsDoc.exists ? analyticsDoc.data() : {
-          impressions: 0,
-          clicks: 0,
-          shares: 0
-        }
+        clicks: analyticsData.clicks || 0,
+        analytics: analyticsData,
+        id: doc.id
       });
     }
     
     // Sort by createdAt in JavaScript if we couldn't use orderBy
-    userLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    userLinks.sort((a, b) => {
+      const dateA = a.createdAt?._seconds ? new Date(a.createdAt._seconds * 1000) : new Date(0);
+      const dateB = b.createdAt?._seconds ? new Date(b.createdAt._seconds * 1000) : new Date(0);
+      return dateB - dateA;
+    });
     
+    console.log(`Returning ${userLinks.length} links for user ${userId}`);
     res.json({ links: userLinks });
   } catch (error) {
     console.error('Error fetching user links:', error);
