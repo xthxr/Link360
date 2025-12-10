@@ -10,6 +10,8 @@ let currentPage = 'home';
 let currentTheme = 'dark';
 let userLinks = [];
 let currentUser = null;
+let userProfile = null; // Store user profile with username
+let userBioSlug = null; // Store user's username for backward compatibility
 
 // Debounce utility for real-time updates
 let analyticsUpdateTimeout = null;
@@ -51,6 +53,14 @@ const createFirstBtn = document.getElementById('createFirstBtn');
 const createLinkSubmit = document.getElementById('createLinkSubmit');
 const loginModal = document.getElementById('loginModal');
 const googleLoginBtn = document.getElementById('googleLoginBtn');
+
+// Username Modal Elements
+const usernameModal = document.getElementById('usernameModal');
+const usernameInput = document.getElementById('usernameInput');
+const usernameError = document.getElementById('usernameError');
+const usernameSuccess = document.getElementById('usernameSuccess');
+const setUsernameBtn = document.getElementById('setUsernameBtn');
+const skipUsernameBtn = document.getElementById('skipUsernameBtn');
 
 // Bug Report Modal Elements
 const bugReportModal = document.getElementById('bugReportModal');
@@ -341,6 +351,30 @@ function initializeEventListeners() {
         });
     }
     
+    // Username validation
+    if (usernameInput) {
+        usernameInput.addEventListener('input', () => {
+            const value = usernameInput.value;
+            // Only allow valid characters
+            usernameInput.value = value.replace(/[^a-zA-Z0-9-_]/g, '');
+            
+            if (value.length > 0) {
+                validateUsername(value);
+            } else {
+                usernameError.style.display = 'none';
+                usernameSuccess.style.display = 'none';
+            }
+        });
+    }
+    
+    if (setUsernameBtn) {
+        setUsernameBtn.addEventListener('click', setUsername);
+    }
+    
+    if (skipUsernameBtn) {
+        skipUsernameBtn.addEventListener('click', hideUsernameModal);
+    }
+    
     // Logout
     if (logoutBtn) {
         logoutBtn.addEventListener('click', handleLogout);
@@ -490,6 +524,10 @@ async function initializeAuth() {
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
+                
+                // Load user profile
+                await loadUserProfile();
+                
                 showAuthenticatedUI();
                 
                 // Show app, hide landing
@@ -497,6 +535,11 @@ async function initializeAuth() {
                 const appContainer = document.getElementById('app');
                 if (landingPage) landingPage.style.display = 'none';
                 if (appContainer) appContainer.style.display = 'flex';
+                
+                // Check if user needs to set username
+                if (!userProfile || !userProfile.username) {
+                    showUsernameModal();
+                }
                 
                 // Get current page from URL
                 const currentPath = window.location.pathname;
@@ -522,6 +565,7 @@ async function initializeAuth() {
                 }
             } else {
                 currentUser = null;
+                userProfile = null;
                 showLandingPage();
             }
         });
@@ -538,6 +582,161 @@ async function initializeAuth() {
                 const currentPageFromUrl = currentPath.substring(1) || 'home';
                 navigateToPage(currentPageFromUrl);
             }
+        }).catch((error) => {
+            console.error('Redirect error:', error);
+            showToast('Error signing in: ' + error.message, 'error');
+        });
+    } else {
+        showLandingPage();
+    }
+}
+
+// Load user profile
+async function loadUserProfile() {
+    try {
+        const token = await getAuthToken();
+        if (!token) return;
+        
+        const response = await fetch('/api/user/profile', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            userProfile = data.profile;
+            userBioSlug = userProfile.username; // Set for backward compatibility
+            console.log('User profile loaded:', userProfile);
+        }
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+    }
+}
+
+// Show username modal
+function showUsernameModal() {
+    if (usernameModal) {
+        usernameModal.style.display = 'flex';
+    }
+}
+
+// Hide username modal
+function hideUsernameModal() {
+    if (usernameModal) {
+        usernameModal.style.display = 'none';
+        if (usernameInput) usernameInput.value = '';
+        if (usernameError) usernameError.style.display = 'none';
+        if (usernameSuccess) usernameSuccess.style.display = 'none';
+    }
+}
+
+// Validate username
+let usernameValidateTimeout;
+async function validateUsername(username) {
+    clearTimeout(usernameValidateTimeout);
+    
+    if (username.length < 3) {
+        usernameError.textContent = 'Username must be at least 3 characters';
+        usernameError.style.display = 'block';
+        usernameSuccess.style.display = 'none';
+        return false;
+    }
+    
+    if (username.length > 20) {
+        usernameError.textContent = 'Username must be less than 20 characters';
+        usernameError.style.display = 'block';
+        usernameSuccess.style.display = 'none';
+        return false;
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        usernameError.textContent = 'Only letters, numbers, hyphens, and underscores allowed';
+        usernameError.style.display = 'block';
+        usernameSuccess.style.display = 'none';
+        return false;
+    }
+    
+    usernameError.style.display = 'none';
+    usernameSuccess.textContent = '⏳ Checking availability...';
+    usernameSuccess.style.display = 'block';
+    
+    usernameValidateTimeout = setTimeout(async () => {
+        try {
+            const token = await getAuthToken();
+            if (!token) return;
+            
+            const response = await fetch(`/api/check-username/${encodeURIComponent(username)}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.available) {
+                    usernameError.style.display = 'none';
+                    usernameSuccess.textContent = '✓ Username is available!';
+                    usernameSuccess.style.display = 'block';
+                    return true;
+                } else {
+                    usernameError.textContent = data.error || '✗ Username is already taken';
+                    usernameError.style.display = 'block';
+                    usernameSuccess.style.display = 'none';
+                    return false;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking username:', error);
+        }
+    }, 300);
+}
+
+// Set username
+async function setUsername() {
+    const username = usernameInput.value.trim();
+    
+    if (!username || username.length < 3) {
+        showToast('Please enter a valid username', 'error');
+        return;
+    }
+    
+    setUsernameBtn.disabled = true;
+    setUsernameBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting...';
+    
+    try {
+        const token = await getAuthToken();
+        if (!token) {
+            showToast('Authentication required', 'error');
+            return;
+        }
+        
+        const response = await fetch('/api/user/username', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ username })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            userProfile.username = username;
+            userBioSlug = username;
+            hideUsernameModal();
+            showToast(`Username set to @${username}!`, 'success');
+        } else {
+            showToast(data.error || 'Failed to set username', 'error');
+        }
+    } catch (error) {
+        console.error('Error setting username:', error);
+        showToast('Failed to set username', 'error');
+    } finally {
+        setUsernameBtn.disabled = false;
+        setUsernameBtn.innerHTML = '<i class="fas fa-check"></i> Set Username';
+    }
         }).catch((error) => {
             console.error('Redirect error:', error);
             showToast('Error signing in: ' + error.message, 'error');
@@ -628,52 +827,35 @@ async function handleLogout(e) {
 // MODAL FUNCTIONS
 // ================================
 
-let userBioSlug = null; // Store user's bio link slug
-
 async function openCreateLinkModal() {
     createLinkModal.classList.add('show');
     destinationUrl.focus();
     
-    // Fetch user's bio link slug
-    try {
-        const user = firebase.auth().currentUser;
-        if (user) {
-            const db = firebase.firestore();
-            const bioLinksSnapshot = await db.collection('bioLinks')
-                .where('userId', '==', user.uid)
-                .limit(1)
-                .get();
-            
-            if (!bioLinksSnapshot.empty) {
-                const bioLink = bioLinksSnapshot.docs[0].data();
-                userBioSlug = bioLink.slug;
-                
-                // Update UI to show username prefix
-                const usernamePrefix = document.getElementById('usernamePrefix');
-                const customShortCodeInput = document.getElementById('customShortCode');
-                const customShortCodeHint = document.getElementById('customShortCodeHint');
-                
-                if (usernamePrefix && customShortCodeInput) {
-                    usernamePrefix.textContent = userBioSlug + '/';
-                    usernamePrefix.style.display = 'block';
-                    customShortCodeInput.style.paddingLeft = `${usernamePrefix.offsetWidth + 20}px`;
-                }
-                
-                if (customShortCodeHint) {
-                    customShortCodeHint.textContent = `Custom links: piik.me/${userBioSlug}/your-code | Random links: piik.me/abc123X`;
-                }
-            } else {
-                // No bio link found
-                userBioSlug = null;
-                const customShortCodeHint = document.getElementById('customShortCodeHint');
-                if (customShortCodeHint) {
-                    customShortCodeHint.textContent = 'Custom links: piik.me/your-code | Random links: piik.me/abc123X';
-                }
-            }
+    // Use username from profile if available
+    if (userProfile && userProfile.username) {
+        userBioSlug = userProfile.username;
+        
+        // Update UI to show username prefix
+        const usernamePrefix = document.getElementById('usernamePrefix');
+        const customShortCodeInput = document.getElementById('customShortCode');
+        const customShortCodeHint = document.getElementById('customShortCodeHint');
+        
+        if (usernamePrefix && customShortCodeInput) {
+            usernamePrefix.textContent = userBioSlug + '/';
+            usernamePrefix.style.display = 'block';
+            customShortCodeInput.style.paddingLeft = `${usernamePrefix.offsetWidth + 20}px`;
         }
-    } catch (error) {
-        console.error('Error fetching bio link:', error);
+        
+        if (customShortCodeHint) {
+            customShortCodeHint.textContent = `Custom links: piik.me/${userBioSlug}/your-code | Random links: piik.me/abc123X`;
+        }
+    } else {
+        // No username set
         userBioSlug = null;
+        const customShortCodeHint = document.getElementById('customShortCodeHint');
+        if (customShortCodeHint) {
+            customShortCodeHint.textContent = 'Set a username to create custom branded links!';
+        }
     }
 }
 
@@ -733,23 +915,41 @@ async function validateCustomShortCode(shortCode) {
     // Check availability with debounce
     validateTimeout = setTimeout(async () => {
         try {
-            const db = firebase.firestore();
-            
-            // If user has a bio slug, check username/slug format
-            let docId = shortCode;
-            if (userBioSlug) {
-                docId = `${userBioSlug}/${shortCode}`;
+            const token = await getAuthToken();
+            if (!token) {
+                customShortCodeSuccess.textContent = '✓ Short code is available!';
+                customShortCodeSuccess.style.display = 'block';
+                return true;
             }
             
-            const doc = await db.collection('links').doc(docId).get();
+            // If user has a bio slug, check username/slug format
+            let checkCode = shortCode;
+            if (userBioSlug) {
+                checkCode = `${userBioSlug}/${shortCode}`;
+            }
             
-            if (doc.exists) {
-                customShortCodeError.textContent = '✗ This short code is already taken';
-                customShortCodeError.style.display = 'block';
-                customShortCodeSuccess.style.display = 'none';
-                return false;
+            // Check via API
+            const response = await fetch(`/api/check-shortcode/${encodeURIComponent(checkCode)}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.available) {
+                    customShortCodeError.style.display = 'none';
+                    customShortCodeSuccess.textContent = '✓ Short code is available!';
+                    customShortCodeSuccess.style.display = 'block';
+                    return true;
+                } else {
+                    customShortCodeError.textContent = '✗ This short code is already taken';
+                    customShortCodeError.style.display = 'block';
+                    customShortCodeSuccess.style.display = 'none';
+                    return false;
+                }
             } else {
-                customShortCodeError.style.display = 'none';
+                // If API fails, assume available
                 customShortCodeSuccess.textContent = '✓ Short code is available!';
                 customShortCodeSuccess.style.display = 'block';
                 return true;
@@ -757,6 +957,7 @@ async function validateCustomShortCode(shortCode) {
         } catch (error) {
             console.error('Error checking availability:', error);
             customShortCodeSuccess.textContent = '✓ Short code is available!';
+            customShortCodeSuccess.style.display = 'block';
             return true; // Allow if check fails
         }
     }, 300);
@@ -796,21 +997,7 @@ async function handleCreateLink() {
             return;
         }
         
-        // Check if already taken
-        try {
-            const db = firebase.firestore();
-            let docId = customCode;
-            if (userBioSlug) {
-                docId = `${userBioSlug}/${customCode}`;
-            }
-            const doc = await db.collection('links').doc(docId).get();
-            if (doc.exists) {
-                showToast('This short code is already taken', 'error');
-                return;
-            }
-        } catch (error) {
-            console.error('Error checking short code:', error);
-        }
+        // The server will check if it's already taken
     }
     
     // Get UTM parameters
@@ -834,6 +1021,12 @@ async function handleCreateLink() {
         const token = await getAuthToken();
         console.log('Creating link with token:', token ? 'Token obtained' : 'No token');
         console.log('Current user:', currentUser);
+        console.log('Request payload:', {
+            url,
+            customShortCode: customCode || null,
+            username: userBioSlug || null,
+            utmParams: Object.keys(utmParams).length > 0 ? utmParams : null
+        });
         
         const response = await fetch('/api/shorten', {
             method: 'POST',

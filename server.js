@@ -284,6 +284,163 @@ app.get('/api/analytics/:shortCode', async (req, res) => {
   });
 });
 
+// Check if username is available
+app.get('/api/check-username/:username', verifyToken, async (req, res) => {
+  const { username } = req.params;
+  
+  try {
+    // Check if username meets requirements
+    if (username.length < 3 || username.length > 20) {
+      return res.json({ available: false, error: 'Username must be 3-20 characters' });
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.json({ available: false, error: 'Username can only contain letters, numbers, hyphens, and underscores' });
+    }
+    
+    const usersSnapshot = await db.collection(COLLECTIONS.USERS)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+    
+    res.json({ available: usersSnapshot.empty });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    res.json({ available: false, error: 'Error checking username' });
+  }
+});
+
+// Check if shortcode is available
+app.get('/api/check-shortcode/:shortCode', verifyToken, async (req, res) => {
+  const { shortCode } = req.params;
+  
+  try {
+    const doc = await db.collection(COLLECTIONS.LINKS).doc(shortCode).get();
+    res.json({ available: !doc.exists });
+  } catch (error) {
+    console.error('Error checking shortcode:', error);
+    res.json({ available: true }); // Assume available if check fails
+  }
+});
+
+// Get or create user profile
+app.get('/api/user/profile', verifyToken, async (req, res) => {
+  const userId = req.user.uid;
+  
+  try {
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
+    
+    if (userDoc.exists) {
+      res.json({ profile: userDoc.data() });
+    } else {
+      // Create new user profile
+      const newProfile = {
+        userId,
+        email: req.user.email,
+        username: null,
+        usernameChangedAt: null,
+        canChangeUsername: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      await db.collection(COLLECTIONS.USERS).doc(userId).set(newProfile);
+      res.json({ profile: newProfile });
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Set or update username (can only be changed once)
+app.post('/api/user/username', verifyToken, async (req, res) => {
+  const userId = req.user.uid;
+  const { username } = req.body;
+  
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+  
+  // Validate username
+  if (username.length < 3 || username.length > 20) {
+    return res.status(400).json({ error: 'Username must be 3-20 characters' });
+  }
+  
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return res.status(400).json({ error: 'Username can only contain letters, numbers, hyphens, and underscores' });
+  }
+  
+  try {
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
+    const userData = userDoc.data();
+    
+    // Check if user can change username
+    if (userData && userData.username && !userData.canChangeUsername) {
+      return res.status(403).json({ error: 'Username can only be changed once' });
+    }
+    
+    // Check if username is available
+    const usersSnapshot = await db.collection(COLLECTIONS.USERS)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+    
+    if (!usersSnapshot.empty) {
+      const existingUser = usersSnapshot.docs[0];
+      if (existingUser.id !== userId) {
+        return res.status(409).json({ error: 'Username is already taken' });
+      }
+    }
+    
+    // Update username
+    const updateData = {
+      username,
+      usernameChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+      canChangeUsername: userData && userData.username ? false : true
+    };
+    
+    await db.collection(COLLECTIONS.USERS).doc(userId).update(updateData);
+    
+    res.json({ 
+      success: true, 
+      username,
+      canChangeUsername: updateData.canChangeUsername
+    });
+  } catch (error) {
+    console.error('Error updating username:', error);
+    res.status(500).json({ error: 'Failed to update username' });
+  }
+});
+
+// Get user's bio slug (requires authentication) - DEPRECATED, use profile instead
+app.get('/api/user/bio-slug', verifyToken, async (req, res) => {
+  const userId = req.user.uid;
+  
+  try {
+    // First check user profile for username
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(userId).get();
+    if (userDoc.exists && userDoc.data().username) {
+      return res.json({ slug: userDoc.data().username });
+    }
+    
+    // Fallback to bioLinks for backward compatibility
+    const bioLinksSnapshot = await db.collection('bioLinks')
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+    
+    if (!bioLinksSnapshot.empty) {
+      const bioLink = bioLinksSnapshot.docs[0].data();
+      res.json({ slug: bioLink.slug || null });
+    } else {
+      res.json({ slug: null });
+    }
+  } catch (error) {
+    console.error('Error fetching bio slug:', error);
+    res.json({ slug: null });
+  }
+});
+
 // Get all links for a user (requires authentication)
 app.get('/api/user/links', verifyToken, async (req, res) => {
   const userId = req.user.uid;
