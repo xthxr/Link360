@@ -5,8 +5,10 @@ Thank you for your interest in contributing to piik.me! We welcome contributions
 ## 🚀 Getting Started
 
 1.  **Fork and Clone**
+    -   Fork the repository on GitHub.
+    -   Clone your fork:
     ```bash
-    git clone https://github.com/xthxr/piik.me.git
+    git clone https://github.com/YOUR_USERNAME/piik.me.git
     cd piik.me
     ```
 
