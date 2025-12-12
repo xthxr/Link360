@@ -3,7 +3,7 @@
    ================================ */
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700;800;900&display=swap');
 
 /* Reset & Base */
 * {
@@ -33,7 +33,7 @@ img {
 
 :root {
     /* Font - Modern Sans-Serif Stack */
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'Encode Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     
     /* Transitions - Optimized for speed */
     --transition-fast: 0.12s cubic-bezier(0.4, 0, 0.2, 1);
