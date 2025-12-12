@@ -722,13 +722,18 @@ html[data-theme="light"] .app-orb {
 
 .user-menu {
     position: relative;
+    margin-left: auto;
 }
 
 .user-menu-btn {
-    background: none;
+     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
+    display: flex;
+    margin-left: auto;
+    margin-top:4px;
+    margin-right:32px;
 }
 
 .user-menu-btn .user-avatar {
@@ -762,6 +767,7 @@ html[data-theme="light"] .app-orb {
 .dropdown-menu.show {
     opacity: 1;
     visibility: visible;
+    overflow: visible;
     transform: translateY(0) scale(1);
 }
 
