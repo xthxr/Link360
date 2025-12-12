@@ -24,7 +24,54 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initializeStickyFeatures();
     initializeMobileMenu();
+    initializeGetStartedButtons();
 });
+
+// ================================
+// GET STARTED AUTHENTICATION CHECK
+// ================================
+
+function initializeGetStartedButtons() {
+    const getStartedButtons = [
+        document.getElementById('navGetStarted'),
+        document.getElementById('heroGetStarted'),
+        document.getElementById('pricingGetStarted')
+    ];
+    
+    getStartedButtons.forEach(button => {
+        if (button) {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleGetStarted();
+            });
+        }
+    });
+}
+
+async function handleGetStarted() {
+    // Check if user is already authenticated
+    // Try to get user from localStorage or check Firebase auth
+    try {
+        // Check if Firebase is loaded
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                // User is signed in, redirect to dashboard
+                window.location.href = '/home';
+            } else {
+                // User is not signed in, redirect to index.html which will show login
+                window.location.href = '/home';
+            }
+        } else {
+            // Firebase not loaded, just redirect to /home
+            window.location.href = '/home';
+        }
+    } catch (error) {
+        console.error('Error checking auth:', error);
+        // On error, redirect to /home
+        window.location.href = '/home';
+    }
+}
 
 // ================================
 // STICKY FEATURE VISUALIZATION
