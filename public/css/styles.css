@@ -3,7 +3,7 @@
    ================================ */
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700;800;900&display=swap');
 
 /* Reset & Base */
 * {
@@ -33,7 +33,7 @@ img {
 
 :root {
     /* Font - Modern Sans-Serif Stack */
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'Encode Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     
     /* Transitions - Optimized for speed */
     --transition-fast: 0.12s cubic-bezier(0.4, 0, 0.2, 1);
@@ -55,23 +55,24 @@ img {
     
     /* Spacing */
     --sidebar-width: 240px;
+    --sidebar-collapsed-width: 80px;
     --topbar-height: 64px;
 }
 
 /* Dark Theme - Modern & Sleek */
 html[data-theme="dark"] {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #141414;
-    --bg-tertiary: #1a1a1a;
-    --bg-hover: #252525;
-    --bg-active: #333333;
+    --bg-primary: #000000;
+    --bg-secondary: #0a0a0a;
+    --bg-tertiary: #141414;
+    --bg-hover: #1a1a1a;
+    --bg-active: #252525;
     
-    --text-primary: #f5f5f5;
+    --text-primary: #ffffff;
     --text-secondary: #a0a0a0;
     --text-tertiary: #707070;
     
     --border-primary: #2a2a2a;
-    --border-secondary: #333333;
+    --border-secondary: #1a1a1a;
     
     --accent-purple: #06b6d4;
     --accent-purple-hover: #0891b2;
@@ -80,15 +81,15 @@ html[data-theme="dark"] {
     --accent-orange: #f59e0b;
     --accent-red: #ef4444;
     
-    --card-bg: #1a1a1a;
+    --card-bg: #0a0a0a;
     --card-border: #2a2a2a;
-    --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     
-    --input-bg: #222222;
-    --input-border: #333333;
-    --input-focus: #7c3aed;
+    --input-bg: #141414;
+    --input-border: #2a2a2a;
+    --input-focus: #06b6d4;
     
-    --overlay: rgba(0, 0, 0, 0.75);
+    --overlay: rgba(0, 0, 0, 0.8);
 }
 
 /* Light Theme - Clean */
@@ -126,7 +127,7 @@ html[data-theme="light"] {
 
 body {
     font-family: var(--font-sans);
-    background: linear-gradient(180deg, #0B1120 0%, #050A14 50%, #0B1120 100%);
+    background: #000000;
     background-attachment: fixed;
     color: var(--text-primary);
     display: flex;
@@ -205,7 +206,7 @@ html[data-theme="light"] .app-orb {
 .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
-    background: rgba(11, 17, 32, 0.7);
+    background: #000000;
     backdrop-filter: blur(20px);
     border-right: 1px solid rgba(139, 157, 184, 0.1);
     display: flex;
@@ -214,7 +215,38 @@ html[data-theme="light"] .app-orb {
     left: 0;
     top: 0;
     z-index: 100;
-    transition: transform var(--transition-normal);
+    transition: width var(--transition-normal), transform var(--transition-normal);
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .logo-image {
+    height: 32px;
+}
+
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .logo-text-wrapper {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transition: opacity var(--transition-fast);
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 12px;
+}
+
+.sidebar.collapsed .sidebar-user {
+    justify-content: center;
+    padding: 12px;
+}
+
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
 }
 
 .sidebar-header {
@@ -273,7 +305,9 @@ html[data-theme="light"] .app-orb {
 }
 
 .sidebar-toggle {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -304,8 +338,8 @@ html[data-theme="light"] .app-orb {
     padding: 12px 16px;
     color: var(--text-secondary);
     text-decoration: none;
-    border-radius: var(--radius-md);
-    transition: var(--transition-fast);
+    border-radius: 12px;
+    transition: all var(--transition-normal);
     font-size: 15px;
     font-weight: 500;
 }
@@ -418,6 +452,10 @@ html[data-theme="light"] .app-orb {
     overflow-x: hidden;
 }
 
+.sidebar.collapsed ~ .main-content {
+    margin-left: var(--sidebar-collapsed-width);
+}
+
 /* App Background Orbs */
 .app-bg {
     position: fixed;
@@ -471,7 +509,7 @@ html[data-theme="light"] .app-orb {
 
 .topbar {
     height: var(--topbar-height);
-    background: rgba(11, 17, 32, 0.7);
+    background: #000000;
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(139, 157, 184, 0.1);
     display: flex;
@@ -886,16 +924,17 @@ html[data-theme="light"] .app-orb {
 .btn-primary {
     background: linear-gradient(135deg, #06b6d4, #0891b2);
     color: white;
-    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.3);
 }
 
 .btn-primary:hover {
     background: linear-gradient(135deg, #0891b2, #0e7490);
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);
+    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4);
+    transform: translateY(-2px);
 }
 
 .btn-primary:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-secondary {
@@ -966,21 +1005,22 @@ html[data-theme="light"] .app-orb {
 }
 
 .stat-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-md);
-    padding: 20px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    transition: var(--transition-fast);
+    gap: 16px;
+    transition: all var(--transition-normal);
+    box-shadow: var(--card-shadow);
 }
 
 .stat-card:hover {
-    border-color: rgba(139, 157, 184, 0.25);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    transform: translateY(-4px);
 }
 
 .stat-icon {
@@ -1167,21 +1207,22 @@ html[data-theme="light"] .filter-select:hover {
 }
 
 .link-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-md);
-    padding: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    transition: all var(--transition-fast);
+    gap: 16px;
+    transition: all var(--transition-normal);
+    box-shadow: var(--card-shadow);
 }
 
 .link-card:hover {
-    border-color: var(--accent-purple);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    transform: translateY(-3px);
 }
 
 .link-card.inactive-link {
@@ -1382,11 +1423,12 @@ html[data-theme="light"] .filter-select:hover {
 }
 
 .chart-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-lg);
-    padding: 24px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--card-shadow);
 }
 
 .chart-header {
@@ -1421,11 +1463,12 @@ html[data-theme="light"] .filter-select:hover {
 }
 
 .analytics-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: var(--card-shadow);
 }
 
 .card-header {
@@ -1505,11 +1548,12 @@ html[data-theme="light"] .filter-select:hover {
 }
 
 .profile-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: var(--card-shadow);
 }
 
 .profile-avatar-section {
@@ -1542,20 +1586,20 @@ html[data-theme="light"] .filter-select:hover {
 
 .form-input {
     width: 100%;
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
-    border-radius: var(--radius-md);
+    border-radius: 8px;
     color: var(--text-primary);
     font-size: 14px;
     outline: none;
-    transition: all var(--transition-fast);
+    transition: all var(--transition-normal);
     font-family: inherit;
 }
 
 .form-input:focus {
     border-color: var(--input-focus);
-    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
 }
 
 .form-input:read-only {
@@ -1723,16 +1767,16 @@ textarea.form-input {
 
 .modal-content {
     position: relative;
-    background: rgba(11, 17, 32, 0.95);
+    background: var(--bg-secondary);
     backdrop-filter: blur(30px);
-    border: 1px solid rgba(139, 157, 184, 0.2);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     max-width: 560px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    animation: slideUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-header {
@@ -3077,17 +3121,19 @@ textarea.form-input {
 }
 
 .qr-card {
-    background: rgba(11, 17, 32, 0.6);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(139, 157, 184, 0.15);
-    border-radius: var(--radius-lg);
-    padding: 24px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 28px;
     transition: all var(--transition-normal);
+    box-shadow: var(--card-shadow);
 }
 
 .qr-card:hover {
-    border-color: rgba(139, 157, 184, 0.25);
-    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
 .qr-card h3 {

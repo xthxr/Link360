@@ -656,10 +656,10 @@ app.post('/api/bug-report', async (req, res) => {
 // This ensures all app routes (/home, /analytics, /profile) serve the index.html
 // Must be BEFORE the /:shortCode route to avoid conflicts
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
-app.get(['/home', '/analytics', '/profile', '/qr-generator', '/bio-link'], (req, res) => {
+app.get(['/home', '/analytics', '/profile', '/qr-generator', '/bio-link', '/dashboard'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

@@ -32,6 +32,10 @@
       "dest": "/public/$1"
     },
     {
+      "src": "^/$",
+      "dest": "/public/landing.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }

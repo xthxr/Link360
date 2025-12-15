@@ -787,8 +787,8 @@ function renderEditorBioLinkItems() {
     }
     
     container.innerHTML = editorBioLinkItems.map((item, index) => `
-        <div class="bio-link-item" draggable="true" data-index="${index}" style="display: flex; gap: 12px; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; cursor: move; transition: all 0.2s ease;">
-            <div class="bio-link-item-handle" style="cursor: grab; color: #9ca3af; display: flex; align-items: center;">
+        <div class="bio-link-item" draggable="true" data-index="${index}" style="display: flex; gap: 12px; padding: 16px; background: #0a0a0a; border-radius: 12px; border: 1px solid #2a2a2a; cursor: move; transition: all 0.2s ease;">
+            <div class="bio-link-item-handle" style="cursor: grab; color: #707070; display: flex; align-items: center;">
                 <i class="fas fa-grip-vertical"></i>
             </div>
             <div class="bio-link-item-content" style="flex: 1; display: grid; gap: 8px;">
