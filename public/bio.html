@@ -613,9 +613,9 @@
         }
 
         .loading-slug {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #06b6d4;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #a0a0a0;
             letter-spacing: 0.05em;
             overflow: hidden;
             border-right: 2px solid #06b6d4;
@@ -776,7 +776,7 @@
         // Display slug in loading screen
         const loadingSlug = document.getElementById('loadingSlug');
         if (loadingSlug && slug) {
-            loadingSlug.textContent = `@${slug}`;
+            loadingSlug.textContent = `piik.me/${slug}`;
         }
 
         async function loadBioLink() {
