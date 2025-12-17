@@ -577,8 +577,28 @@ async function importFromPlatform() {
 
 async function importFromLinktree(username) {
     try {
-        // Use CORS proxy to fetch the page
-        const corsProxy = 'https://api.allorigins.win/get?url=';
+        // Method 1: Try Linktree's public API first
+        try {
+            const apiResponse = await fetch(`https://linktr.ee/${username}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (apiResponse.ok) {
+                const jsonData = await apiResponse.json();
+                console.log('Linktree API response:', jsonData);
+                
+                if (jsonData.account || jsonData.links) {
+                    return parseLinktreeData(jsonData, username);
+                }
+            }
+        } catch (apiError) {
+            console.log('API method failed, trying scraping method');
+        }
+        
+        // Method 2: Try different CORS proxy
+        const corsProxy = 'https://corsproxy.io/?';
         const url = `https://linktr.ee/${username}`;
         const response = await fetch(corsProxy + encodeURIComponent(url));
         
@@ -586,17 +606,9 @@ async function importFromLinktree(username) {
             throw new Error('Failed to fetch Linktree data');
         }
         
-        const result = await response.json();
-        const html = result.contents;
+        const html = await response.text();
+        console.log('Fetched HTML length:', html.length);
         
-        const data = {
-            name: '',
-            description: '',
-            links: [],
-            profilePicture: '',
-            social: {}
-        };
-
         // Parse HTML to find __NEXT_DATA__ script tag
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -604,124 +616,119 @@ async function importFromLinktree(username) {
         // Look for Next.js data
         const nextDataScript = doc.querySelector('script#__NEXT_DATA__');
         if (nextDataScript) {
-            try {
-                const nextData = JSON.parse(nextDataScript.textContent);
-                console.log('Linktree Next.js data:', nextData); // Debug log
-                
-                const props = nextData?.props?.pageProps;
-                
-                if (props) {
-                    // Extract account info
-                    if (props.account) {
-                        if (props.account.username) data.name = props.account.username;
-                        if (props.account.pageTitle) data.name = props.account.pageTitle;
-                        if (props.account.description) data.description = props.account.description;
-                        if (props.account.profilePictureUrl) data.profilePicture = props.account.profilePictureUrl;
+            const nextData = JSON.parse(nextDataScript.textContent);
+            console.log('Linktree Next.js data:', nextData);
+            return parseLinktreeData(nextData.props?.pageProps || nextData, username);
+        }
+        
+        // Method 3: Try to find embedded JSON in script tags
+        const allScripts = doc.querySelectorAll('script');
+        for (const script of allScripts) {
+            const content = script.textContent;
+            if (content.includes('account') && content.includes('links')) {
+                try {
+                    const jsonMatch = content.match(/({.*})/s);
+                    if (jsonMatch) {
+                        const jsonData = JSON.parse(jsonMatch[1]);
+                        console.log('Found embedded JSON:', jsonData);
+                        return parseLinktreeData(jsonData, username);
                     }
-                    
-                    // Extract links - try multiple possible paths
-                    let links = props.links || props.account?.links || [];
-                    
-                    console.log('Found links:', links); // Debug log
-                    
-                    if (links && Array.isArray(links)) {
-                        links.forEach(link => {
-                            // Skip social links, only get regular links
-                            if (link.url && link.title && link.type !== 'SOCIAL_LINK' && link.type !== 'SOCIAL') {
-                                data.links.push({
-                                    title: link.title,
-                                    url: link.url
-                                });
-                            }
-                        });
-                    }
-                    
-                    // Extract social links from multiple possible locations
-                    let socialLinks = props.socialLinks || props.account?.socialLinks || [];
-                    
-                    console.log('Found social links:', socialLinks); // Debug log
-                    
-                    if (socialLinks && Array.isArray(socialLinks)) {
-                        socialLinks.forEach(social => {
-                            const url = social.url || '';
-                            const platform = social.platform || social.type || '';
-                            
-                            if (url) {
-                                if (platform.toLowerCase().includes('instagram') || url.includes('instagram.com')) {
-                                    const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
-                                    if (match) data.social.instagram = match[1];
-                                } else if (platform.toLowerCase().includes('twitter') || url.includes('twitter.com') || url.includes('x.com')) {
-                                    const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
-                                    if (match) data.social.twitter = match[1];
-                                } else if (platform.toLowerCase().includes('youtube') || url.includes('youtube.com')) {
-                                    data.social.youtube = url;
-                                } else if (platform.toLowerCase().includes('tiktok') || url.includes('tiktok.com')) {
-                                    const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
-                                    if (match) data.social.tiktok = match[1];
-                                } else if (platform.toLowerCase().includes('github') || url.includes('github.com')) {
-                                    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
-                                    if (match) data.social.github = match[1];
-                                } else if (platform.toLowerCase().includes('linkedin') || url.includes('linkedin.com')) {
-                                    data.social.linkedin = url;
-                                }
-                            }
-                        });
-                    }
-                    
-                    // Also check for links that might be social in the main links array
-                    if (links && Array.isArray(links)) {
-                        links.forEach(link => {
-                            if ((link.type === 'SOCIAL_LINK' || link.type === 'SOCIAL') && link.url) {
-                                const url = link.url;
-                                if (url.includes('instagram.com') && !data.social.instagram) {
-                                    const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
-                                    if (match) data.social.instagram = match[1];
-                                } else if ((url.includes('twitter.com') || url.includes('x.com')) && !data.social.twitter) {
-                                    const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
-                                    if (match) data.social.twitter = match[1];
-                                } else if (url.includes('youtube.com') && !data.social.youtube) {
-                                    data.social.youtube = url;
-                                } else if (url.includes('tiktok.com') && !data.social.tiktok) {
-                                    const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
-                                    if (match) data.social.tiktok = match[1];
-                                } else if (url.includes('github.com') && !data.social.github) {
-                                    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
-                                    if (match) data.social.github = match[1];
-                                }
-                            }
-                        });
-                    }
+                } catch (e) {
+                    continue;
                 }
-            } catch (e) {
-                console.log('Could not parse NEXT_DATA:', e);
             }
         }
         
-        // Fallback to meta tags if Next.js data not found
-        if (!data.name) {
-            const ogTitle = doc.querySelector('meta[property="og:title"]');
-            if (ogTitle) data.name = ogTitle.content.replace('@', '');
-        }
+        throw new Error('Could not extract Linktree data');
         
-        if (!data.description) {
-            const ogDescription = doc.querySelector('meta[property="og:description"]');
-            if (ogDescription) data.description = ogDescription.content;
-        }
-        
-        if (!data.profilePicture) {
-            const ogImage = doc.querySelector('meta[property="og:image"]');
-            if (ogImage) data.profilePicture = ogImage.content;
-        }
-        
-        // If no name found, use username
-        if (!data.name) {
-            data.name = username;
-        }
-
-        return data;
     } catch (error) {
         console.error('Linktree import error:', error);
         return null;
+    }
+}
+
+function parseLinktreeData(props, username) {
+    const data = {
+        name: '',
+        description: '',
+        links: [],
+        profilePicture: '',
+        social: {}
+    };
+    
+    // Extract account info
+    if (props.account) {
+        if (props.account.username) data.name = props.account.username;
+        if (props.account.pageTitle) data.name = props.account.pageTitle;
+        if (props.account.description) data.description = props.account.description;
+        if (props.account.profilePictureUrl) data.profilePicture = props.account.profilePictureUrl;
+    }
+    
+    // Extract links - try multiple possible paths
+    let links = props.links || props.account?.links || [];
+    
+    console.log('Parsing links:', links);
+    
+    if (links && Array.isArray(links)) {
+        links.forEach(link => {
+            // Skip social links, only get regular links
+            if (link.url && link.title && link.type !== 'SOCIAL_LINK' && link.type !== 'SOCIAL') {
+                data.links.push({
+                    title: link.title,
+                    url: link.url
+                });
+            }
+        });
+    }
+    
+    // Extract social links from multiple possible locations
+    let socialLinks = props.socialLinks || props.account?.socialLinks || [];
+    
+    console.log('Parsing social links:', socialLinks);
+    
+    if (socialLinks && Array.isArray(socialLinks)) {
+        socialLinks.forEach(social => {
+            extractSocialLink(social.url, data.social);
+        });
+    }
+    
+    // Also check for links that might be social in the main links array
+    if (links && Array.isArray(links)) {
+        links.forEach(link => {
+            if ((link.type === 'SOCIAL_LINK' || link.type === 'SOCIAL') && link.url) {
+                extractSocialLink(link.url, data.social);
+            }
+        });
+    }
+    
+    // If no name found, use username
+    if (!data.name) {
+        data.name = username;
+    }
+    
+    console.log('Final parsed data:', data);
+    return data;
+}
+
+function extractSocialLink(url, socialObj) {
+    if (!url) return;
+    
+    if (url.includes('instagram.com') && !socialObj.instagram) {
+        const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
+        if (match) socialObj.instagram = match[1];
+    } else if ((url.includes('twitter.com') || url.includes('x.com')) && !socialObj.twitter) {
+        const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
+        if (match) socialObj.twitter = match[1];
+    } else if (url.includes('youtube.com') && !socialObj.youtube) {
+        socialObj.youtube = url;
+    } else if (url.includes('tiktok.com') && !socialObj.tiktok) {
+        const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
+        if (match) socialObj.tiktok = match[1];
+    } else if (url.includes('github.com') && !socialObj.github) {
+        const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
+        if (match) socialObj.github = match[1];
+    } else if (url.includes('linkedin.com') && !socialObj.linkedin) {
+        socialObj.linkedin = url;
     }
 }
 
