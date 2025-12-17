@@ -577,15 +577,17 @@ async function importFromPlatform() {
 
 async function importFromLinktree(username) {
     try {
-        // Fetch data directly from Linktree API
-        const apiUrl = `https://linktr.ee/api/profiles/${username}`;
-        const response = await fetch(apiUrl);
+        // Use CORS proxy to fetch the page
+        const corsProxy = 'https://api.allorigins.win/get?url=';
+        const url = `https://linktr.ee/${username}`;
+        const response = await fetch(corsProxy + encodeURIComponent(url));
         
         if (!response.ok) {
             throw new Error('Failed to fetch Linktree data');
         }
         
-        const jsonData = await response.json();
+        const result = await response.json();
+        const html = result.contents;
         
         const data = {
             name: '',
@@ -595,57 +597,109 @@ async function importFromLinktree(username) {
             social: {}
         };
 
-        // Extract profile info
-        if (jsonData.username) {
-            data.name = jsonData.username;
-        }
+        // Parse HTML to find __NEXT_DATA__ script tag
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
         
-        if (jsonData.description) {
-            data.description = jsonData.description;
-        }
-        
-        if (jsonData.profilePictureUrl) {
-            data.profilePicture = jsonData.profilePictureUrl;
-        }
-        
-        // Extract links
-        if (jsonData.links && Array.isArray(jsonData.links)) {
-            jsonData.links.forEach(link => {
-                if (link.url && link.title) {
-                    data.links.push({
-                        title: link.title,
-                        url: link.url
-                    });
-                }
-            });
-        }
-        
-        // Extract social media links
-        if (jsonData.socialLinks && Array.isArray(jsonData.socialLinks)) {
-            jsonData.socialLinks.forEach(social => {
-                const url = social.url || '';
-                const platform = social.platform || social.type || '';
+        // Look for Next.js data
+        const nextDataScript = doc.querySelector('script#__NEXT_DATA__');
+        if (nextDataScript) {
+            try {
+                const nextData = JSON.parse(nextDataScript.textContent);
+                const props = nextData?.props?.pageProps;
                 
-                if (url) {
-                    if (platform.toLowerCase().includes('instagram') || url.includes('instagram.com')) {
-                        const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
-                        if (match) data.social.instagram = match[1];
-                    } else if (platform.toLowerCase().includes('twitter') || url.includes('twitter.com') || url.includes('x.com')) {
-                        const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
-                        if (match) data.social.twitter = match[1];
-                    } else if (platform.toLowerCase().includes('youtube') || url.includes('youtube.com')) {
-                        data.social.youtube = url;
-                    } else if (platform.toLowerCase().includes('tiktok') || url.includes('tiktok.com')) {
-                        const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
-                        if (match) data.social.tiktok = match[1];
-                    } else if (platform.toLowerCase().includes('github') || url.includes('github.com')) {
-                        const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
-                        if (match) data.social.github = match[1];
-                    } else if (platform.toLowerCase().includes('linkedin') || url.includes('linkedin.com')) {
-                        data.social.linkedin = url;
+                if (props) {
+                    // Extract account info
+                    if (props.account) {
+                        if (props.account.username) data.name = props.account.username;
+                        if (props.account.pageTitle) data.name = props.account.pageTitle;
+                        if (props.account.description) data.description = props.account.description;
+                        if (props.account.profilePictureUrl) data.profilePicture = props.account.profilePictureUrl;
+                    }
+                    
+                    // Extract links
+                    if (props.links && Array.isArray(props.links)) {
+                        props.links.forEach(link => {
+                            if (link.url && link.title && link.type !== 'SOCIAL_LINK') {
+                                data.links.push({
+                                    title: link.title,
+                                    url: link.url
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Extract social links
+                    if (props.socialLinks && Array.isArray(props.socialLinks)) {
+                        props.socialLinks.forEach(social => {
+                            const url = social.url || '';
+                            const platform = social.platform || social.type || '';
+                            
+                            if (url) {
+                                if (platform.toLowerCase().includes('instagram') || url.includes('instagram.com')) {
+                                    const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
+                                    if (match) data.social.instagram = match[1];
+                                } else if (platform.toLowerCase().includes('twitter') || url.includes('twitter.com') || url.includes('x.com')) {
+                                    const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
+                                    if (match) data.social.twitter = match[1];
+                                } else if (platform.toLowerCase().includes('youtube') || url.includes('youtube.com')) {
+                                    data.social.youtube = url;
+                                } else if (platform.toLowerCase().includes('tiktok') || url.includes('tiktok.com')) {
+                                    const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
+                                    if (match) data.social.tiktok = match[1];
+                                } else if (platform.toLowerCase().includes('github') || url.includes('github.com')) {
+                                    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
+                                    if (match) data.social.github = match[1];
+                                } else if (platform.toLowerCase().includes('linkedin') || url.includes('linkedin.com')) {
+                                    data.social.linkedin = url;
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Also check for links that might be social in the main links array
+                    if (props.links && Array.isArray(props.links)) {
+                        props.links.forEach(link => {
+                            if (link.type === 'SOCIAL_LINK' && link.url) {
+                                const url = link.url;
+                                if (url.includes('instagram.com') && !data.social.instagram) {
+                                    const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
+                                    if (match) data.social.instagram = match[1];
+                                } else if ((url.includes('twitter.com') || url.includes('x.com')) && !data.social.twitter) {
+                                    const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
+                                    if (match) data.social.twitter = match[1];
+                                } else if (url.includes('youtube.com') && !data.social.youtube) {
+                                    data.social.youtube = url;
+                                } else if (url.includes('tiktok.com') && !data.social.tiktok) {
+                                    const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
+                                    if (match) data.social.tiktok = match[1];
+                                } else if (url.includes('github.com') && !data.social.github) {
+                                    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
+                                    if (match) data.social.github = match[1];
+                                }
+                            }
+                        });
                     }
                 }
-            });
+            } catch (e) {
+                console.log('Could not parse NEXT_DATA:', e);
+            }
+        }
+        
+        // Fallback to meta tags if Next.js data not found
+        if (!data.name) {
+            const ogTitle = doc.querySelector('meta[property="og:title"]');
+            if (ogTitle) data.name = ogTitle.content.replace('@', '');
+        }
+        
+        if (!data.description) {
+            const ogDescription = doc.querySelector('meta[property="og:description"]');
+            if (ogDescription) data.description = ogDescription.content;
+        }
+        
+        if (!data.profilePicture) {
+            const ogImage = doc.querySelector('meta[property="og:image"]');
+            if (ogImage) data.profilePicture = ogImage.content;
         }
         
         // If no name found, use username
