@@ -226,12 +226,19 @@ app.post('/api/shorten', verifyToken, async (req, res) => {
 
   try {
     // Save to Firestore
-    console.log('Saving link to Firestore:', { shortCode, userId });
+    console.log('Saving link to Firestore:', { shortCode, userId, linkData });
     await db.collection(COLLECTIONS.LINKS).doc(shortCode).set(linkData);
-    console.log('Link saved successfully');
+    console.log('Link saved successfully to Firestore with shortCode:', shortCode);
     
     await db.collection(COLLECTIONS.ANALYTICS).doc(shortCode).set(analyticsData);
     console.log('Analytics saved successfully');
+    
+    // Verify the link was saved
+    const verifyDoc = await db.collection(COLLECTIONS.LINKS).doc(shortCode).get();
+    console.log('Verification - Link exists in Firestore:', verifyDoc.exists);
+    if (verifyDoc.exists) {
+      console.log('Verification - Saved data:', verifyDoc.data());
+    }
     
     res.json({
       success: true,
@@ -242,6 +249,7 @@ app.post('/api/shorten', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error saving to Firestore:', error);
+    console.error('Error details:', error.message, error.stack);
     
     // Fallback to in-memory storage
     links.set(shortCode, linkData);
