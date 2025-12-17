@@ -941,7 +941,7 @@
             const socialLinks = [];
             
             if (social.instagram) socialLinks.push({ icon: 'fab fa-instagram', url: `https://instagram.com/${social.instagram}` });
-            if (social.twitter) socialLinks.push({ icon: 'fab fa-twitter', url: `https://twitter.com/${social.twitter}` });
+            if (social.twitter) socialLinks.push({ icon: 'fab fa-twitter', url: `https://x.com/${social.x}` });
             if (social.linkedin) socialLinks.push({ icon: 'fab fa-linkedin', url: social.linkedin.startsWith('http') ? social.linkedin : `https://linkedin.com/in/${social.linkedin}` });
             if (social.github) socialLinks.push({ icon: 'fab fa-github', url: `https://github.com/${social.github}` });
             if (social.youtube) socialLinks.push({ icon: 'fab fa-youtube', url: social.youtube.startsWith('http') ? social.youtube : `https://youtube.com/@${social.youtube}` });
@@ -985,7 +985,7 @@
                     <div class="powered-by">
                         <span>linktree is trash, try</span>
                         <a href="/" target="_blank" style="display: flex; align-items: center; text-decoration: none;">
-                            <img src="/assets/images/logo.png" alt="piik.me" style="width: 24px; height: 24px;">
+                            <img src="/assets/images/logo.png" alt="piik.me" style="width: auto; height: 24px;">
                         </a>
                     </div>
                 </div>
