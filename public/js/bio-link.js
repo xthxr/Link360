@@ -527,11 +527,11 @@ async function importFromPlatform() {
 
     if (importUrl.includes('linktr.ee') || importUrl.includes('linktree.com')) {
         platform = 'linktree';
-        const match = importUrl.match(/linktr\.ee\/([a-zA-Z0-9_.-]+)|linktree\.com\/([a-zA-Z0-9_.-]+)/);
+        const match = importUrl.match(/(?:https?:\/\/)?(?:www\.)?linktr\.ee\/([a-zA-Z0-9_.-]+)|(?:https?:\/\/)?(?:www\.)?linktree\.com\/([a-zA-Z0-9_.-]+)/);
         username = match ? (match[1] || match[2]) : null;
     } else if (importUrl.includes('bento.me')) {
         platform = 'bento';
-        const match = importUrl.match(/bento\.me\/([a-zA-Z0-9_.-]+)/);
+        const match = importUrl.match(/(?:https?:\/\/)?(?:www\.)?bento\.me\/([a-zA-Z0-9_.-]+)/);
         username = match ? match[1] : null;
     }
 
@@ -577,17 +577,16 @@ async function importFromPlatform() {
 
 async function importFromLinktree(username) {
     try {
-        // Use a CORS proxy to fetch Linktree data
-        const corsProxy = 'https://api.allorigins.win/raw?url=';
-        const url = `https://linktr.ee/${username}`;
-        const response = await fetch(corsProxy + encodeURIComponent(url));
-        const html = await response.text();
+        // Fetch data directly from Linktree API
+        const apiUrl = `https://linktr.ee/api/profiles/${username}`;
+        const response = await fetch(apiUrl);
         
-        // Parse HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        if (!response.ok) {
+            throw new Error('Failed to fetch Linktree data');
+        }
         
-        // Extract data from meta tags and page content
+        const jsonData = await response.json();
+        
         const data = {
             name: '',
             description: '',
@@ -596,35 +595,59 @@ async function importFromLinktree(username) {
             social: {}
         };
 
-        // Try to get name from meta tags
-        const ogTitle = doc.querySelector('meta[property="og:title"]');
-        if (ogTitle) {
-            data.name = ogTitle.content.replace('@', '');
+        // Extract profile info
+        if (jsonData.username) {
+            data.name = jsonData.username;
         }
-
-        // Try to get description
-        const ogDescription = doc.querySelector('meta[property="og:description"]');
-        if (ogDescription) {
-            data.description = ogDescription.content;
+        
+        if (jsonData.description) {
+            data.description = jsonData.description;
         }
-
-        // Try to get profile picture
-        const ogImage = doc.querySelector('meta[property="og:image"]');
-        if (ogImage) {
-            data.profilePicture = ogImage.content;
+        
+        if (jsonData.profilePictureUrl) {
+            data.profilePicture = jsonData.profilePictureUrl;
         }
-
-        // Try to extract links from JSON-LD or embedded data
-        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
-        scripts.forEach(script => {
-            try {
-                const jsonData = JSON.parse(script.textContent);
-                if (jsonData.name) data.name = jsonData.name;
-                if (jsonData.description) data.description = jsonData.description;
-                if (jsonData.image) data.profilePicture = jsonData.image;
-            } catch (e) {}
-        });
-
+        
+        // Extract links
+        if (jsonData.links && Array.isArray(jsonData.links)) {
+            jsonData.links.forEach(link => {
+                if (link.url && link.title) {
+                    data.links.push({
+                        title: link.title,
+                        url: link.url
+                    });
+                }
+            });
+        }
+        
+        // Extract social media links
+        if (jsonData.socialLinks && Array.isArray(jsonData.socialLinks)) {
+            jsonData.socialLinks.forEach(social => {
+                const url = social.url || '';
+                const platform = social.platform || social.type || '';
+                
+                if (url) {
+                    if (platform.toLowerCase().includes('instagram') || url.includes('instagram.com')) {
+                        const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
+                        if (match) data.social.instagram = match[1];
+                    } else if (platform.toLowerCase().includes('twitter') || url.includes('twitter.com') || url.includes('x.com')) {
+                        const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
+                        if (match) data.social.twitter = match[1];
+                    } else if (platform.toLowerCase().includes('youtube') || url.includes('youtube.com')) {
+                        data.social.youtube = url;
+                    } else if (platform.toLowerCase().includes('tiktok') || url.includes('tiktok.com')) {
+                        const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
+                        if (match) data.social.tiktok = match[1];
+                    } else if (platform.toLowerCase().includes('github') || url.includes('github.com')) {
+                        const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
+                        if (match) data.social.github = match[1];
+                    } else if (platform.toLowerCase().includes('linkedin') || url.includes('linkedin.com')) {
+                        data.social.linkedin = url;
+                    }
+                }
+            });
+        }
+        
         // If no name found, use username
         if (!data.name) {
             data.name = username;
@@ -639,11 +662,12 @@ async function importFromLinktree(username) {
 
 async function importFromBento(username) {
     try {
-        // Use a CORS proxy to fetch Bento data
-        const corsProxy = 'https://api.allorigins.win/raw?url=';
+        // Try to fetch from Bento API or page
+        const corsProxy = 'https://api.allorigins.win/get?url=';
         const url = `https://bento.me/${username}`;
         const response = await fetch(corsProxy + encodeURIComponent(url));
-        const html = await response.text();
+        const result = await response.json();
+        const html = result.contents;
         
         // Parse HTML
         const parser = new DOMParser();
@@ -673,6 +697,61 @@ async function importFromBento(username) {
         const ogImage = doc.querySelector('meta[property="og:image"]');
         if (ogImage) {
             data.profilePicture = ogImage.content;
+        }
+        
+        // Try to extract data from Next.js __NEXT_DATA__ script
+        const nextDataScript = doc.querySelector('script#__NEXT_DATA__');
+        if (nextDataScript) {
+            try {
+                const nextData = JSON.parse(nextDataScript.textContent);
+                const pageProps = nextData?.props?.pageProps;
+                
+                if (pageProps) {
+                    if (pageProps.user) {
+                        if (pageProps.user.name) data.name = pageProps.user.name;
+                        if (pageProps.user.bio) data.description = pageProps.user.bio;
+                        if (pageProps.user.avatar) data.profilePicture = pageProps.user.avatar;
+                    }
+                    
+                    // Extract links/components
+                    if (pageProps.components && Array.isArray(pageProps.components)) {
+                        pageProps.components.forEach(component => {
+                            if (component.type === 'link' && component.url && component.title) {
+                                data.links.push({
+                                    title: component.title,
+                                    url: component.url
+                                });
+                            }
+                            
+                            // Extract social links
+                            if (component.type === 'social' || component.platform) {
+                                const url = component.url || '';
+                                const platform = component.platform || '';
+                                
+                                if (url) {
+                                    if (platform === 'instagram' || url.includes('instagram.com')) {
+                                        const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
+                                        if (match) data.social.instagram = match[1];
+                                    } else if (platform === 'twitter' || url.includes('twitter.com') || url.includes('x.com')) {
+                                        const match = url.match(/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/);
+                                        if (match) data.social.twitter = match[1];
+                                    } else if (platform === 'youtube' || url.includes('youtube.com')) {
+                                        data.social.youtube = url;
+                                    } else if (platform === 'tiktok' || url.includes('tiktok.com')) {
+                                        const match = url.match(/tiktok\.com\/@?([a-zA-Z0-9_.]+)/);
+                                        if (match) data.social.tiktok = match[1];
+                                    } else if (platform === 'github' || url.includes('github.com')) {
+                                        const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)/);
+                                        if (match) data.social.github = match[1];
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log('Could not parse NEXT_DATA:', e);
+            }
         }
 
         // If no name found, use username
