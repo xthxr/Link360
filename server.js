@@ -287,8 +287,9 @@ app.get('/api/analytics/:shortCode', async (req, res) => {
   
   try {
     // Try Firestore first
-    const linkDoc = await db.collection(COLLECTIONS.LINKS).doc(shortCode).get();
-    const analyticsDoc = await db.collection(COLLECTIONS.ANALYTICS).doc(shortCode).get();
+    const firestoreId = toFirestoreId(shortCode);
+    const linkDoc = await db.collection(COLLECTIONS.LINKS).doc(firestoreId).get();
+    const analyticsDoc = await db.collection(COLLECTIONS.ANALYTICS).doc(firestoreId).get();
     
     if (linkDoc.exists && analyticsDoc.exists) {
       return res.json({
