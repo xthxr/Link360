@@ -400,7 +400,7 @@ const QRGenerator = {
                     type: patternOptions.cornersDotType
                 },
                 backgroundOptions: {
-                    color: this.transparentBg?.checked ? 'transparent' : this.currentBgColor
+                    color: 'transparent' // Always transparent - let container handle background
                 }
             };
 
@@ -420,7 +420,7 @@ const QRGenerator = {
             const svg = container.querySelector('svg');
             if (svg) {
                 svg.style.display = 'block';
-                svg.style.borderRadius = '12px';
+                svg.style.borderRadius = '24px'; // Match container border-radius
                 svg.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
                 svg.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                 svg.style.width = '400px';
@@ -609,11 +609,28 @@ const QRGenerator = {
         // Scale values based on size
         const scale = size / 400;
         const padding = 5 * scale;
-        const strokeWidth = 8 * scale;
+        const strokeWidth = 10 * scale; // Increased from 8 to 10 for better visibility
         const fontSize = 16 * scale;
         const textY = 25 * scale;
 
-        // Add frame rectangle
+        // Add clip-path for rounded corners (24px radius)
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+        clipPath.setAttribute('id', 'rounded-corners');
+        const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        clipRect.setAttribute('x', '0');
+        clipRect.setAttribute('y', '0');
+        clipRect.setAttribute('width', size.toString());
+        clipRect.setAttribute('height', size.toString());
+        clipRect.setAttribute('rx', '24');
+        clipRect.setAttribute('ry', '24');
+        clipPath.appendChild(clipRect);
+        defs.appendChild(clipPath);
+        svg.insertBefore(defs, svg.firstChild);
+
+        svg.setAttribute('clip-path', 'url(#rounded-corners)');
+
+        // Add frame rectangle on top
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', padding.toString());
         rect.setAttribute('y', padding.toString());
@@ -623,7 +640,9 @@ const QRGenerator = {
         rect.setAttribute('stroke', frameColor);
         rect.setAttribute('stroke-width', strokeWidth.toString());
         rect.setAttribute('rx', (10 * scale).toString());
-        svg.insertBefore(rect, svg.firstChild);
+        rect.setAttribute('stroke-linecap', 'round');
+        rect.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(rect);
 
         // Add frame text if provided
         if (frameText) {
@@ -634,6 +653,10 @@ const QRGenerator = {
             text.setAttribute('font-size', fontSize.toString());
             text.setAttribute('font-weight', 'bold');
             text.setAttribute('fill', frameColor);
+            text.setAttribute('stroke', 'rgba(255,255,255,0.8)');
+            text.setAttribute('stroke-width', '1');
+            text.setAttribute('stroke-linecap', 'round');
+            text.setAttribute('stroke-linejoin', 'round');
             text.textContent = frameText;
             svg.appendChild(text);
         }
@@ -691,12 +714,15 @@ const QRGenerator = {
             }
 
             // Create download QR with proper settings
+            const qrSize = 400;
+            const canvasSize = extension === 'svg' ? 400 : 800;
+            const scale = canvasSize / 400;
             const downloadOptions = {
-                width: extension === 'svg' ? 400 : 800,
-                height: extension === 'svg' ? 400 : 800,
-                type: extension === 'svg' ? 'svg' : 'canvas',
+                width: qrSize,
+                height: qrSize,
+                type: 'svg',
                 data: this.currentLink,
-                margin: frameOptions.margin,
+                margin: frameOptions.margin * scale,
                 qrOptions: {
                     errorCorrectionLevel: 'H'
                 },
@@ -728,42 +754,80 @@ const QRGenerator = {
                 downloadOptions.image = await this.createBrandImage(this.currentBrandName);
             }
 
-            // Create new QR instance for download with frames
+            // Create new QR instance for download
             const downloadQR = new QRCodeStyling(downloadOptions);
             
-            // For frames, we need to modify the SVG after generation
+            // Create temporary container
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            document.body.appendChild(tempContainer);
+            
+            // Generate QR in temp container
+            downloadQR.append(tempContainer);
+            
+            // Wait for SVG to be rendered
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Apply frame if selected
             if (this.currentFrame !== 'none') {
-                // Create temporary container
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                document.body.appendChild(tempContainer);
+                this.applyFrameToSVG(tempContainer, frameOptions, qrSize);
+            }
+            
+            // Get the SVG element
+            const svg = tempContainer.querySelector('svg');
+            
+            if (extension === 'svg') {
+                // Download SVG directly
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
                 
-                // Generate QR in temp container
-                await downloadQR.append(tempContainer);
-                
-                // Wait for SVG to be rendered
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Apply frame with appropriate size
-                const downloadSize = extension === 'svg' ? 400 : 800;
-                this.applyFrameToSVG(tempContainer, frameOptions, downloadSize);
-                
-                // Download from temp container
-                await downloadQR.download({
-                    name: fileName.replace(`.${extension}`, ''),
-                    extension: extension
-                });
-                
-                // Clean up
-                document.body.removeChild(tempContainer);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             } else {
-                // Download directly without frame
-                await downloadQR.download({
-                    name: fileName.replace(`.${extension}`, ''),
-                    extension: extension
+                // Convert SVG to Canvas for PNG/JPG
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const img = new Image();
+                const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = canvasSize;
+                        canvas.height = canvasSize;
+                        const ctx = canvas.getContext('2d');
+                        
+                        ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+                        
+                        canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            resolve();
+                        }, extension === 'jpg' ? 'image/jpeg' : 'image/png', 0.95);
+                        
+                        URL.revokeObjectURL(url);
+                    };
+                    
+                    img.onerror = reject;
+                    img.src = url;
                 });
             }
+            
+            // Clean up
+            document.body.removeChild(tempContainer);
             
             this.showNotification('QR Code downloaded successfully!', 'success');
 
