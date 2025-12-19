@@ -51,32 +51,31 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/5 bg-black/50 transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <!-- Logo -->
             <a href="/" class="flex items-center gap-2 group">
-                <div class="relative w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg border border-white/10 group-hover:border-accent/50 transition-colors">
-                    <img src="assets/images/logo.png" alt="piik.me" class="w-5 h-5 object-contain opacity-90">
+                <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg transition-all duration-200 group-hover:bg-white/15">
+                    <img src="/assets/images/logo.png" alt="piik.me" class="w-5 h-5 object-contain brightness-0 invert">
                 </div>
-                <span class="font-bold text-xl tracking-tight text-white group-hover:text-accent transition-colors">piik.me</span>
+                <span class="text-white font-semibold text-lg tracking-tight">PIIK.ME</span>
             </a>
 
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center gap-8">
-                <a href="#features" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Platform</a>
-                <a href="#analytics" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Analytics</a>
-                <a href="#pricing" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Pricing</a>
-                <a href="https://github.com/xthxr/piik.me" target="_blank" class="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                <a href="#features" class="simple-nav-link">PLATFORM</a>
+                <a href="#analytics" class="simple-nav-link">ANALYTICS</a>
+                <a href="#pricing" class="simple-nav-link">PRICING</a>
+                <a href="https://github.com/xthxr/piik.me" target="_blank" class="simple-nav-link flex items-center gap-2">
                     <i class="fab fa-github"></i>
-                    <span class="github-star-count bg-white/5 px-2 py-0.5 rounded-full text-xs">...</span>
+                    GITHUB
                 </a>
             </div>
-
-            <div class="hidden md:flex items-center gap-4">
-                <a href="/home" class="text-sm font-medium text-white hover:text-gray-200 transition-colors">Log in</a>
-                <a href="/home" class="btn-primary">
-                    <span class="relative z-10">Get Started</span>
-                    <div class="absolute inset-0 bg-accent blur-md opacity-50 group-hover:opacity-100 transition-opacity rounded-lg"></div>
-                </a>
+            
+            <!-- Right Side Actions -->
+            <div class="hidden md:flex items-center gap-3">
+                <a href="/home" class="simple-btn-secondary">LOG IN</a>
+                <a href="/home" class="simple-btn-primary">GET STARTED</a>
             </div>
 
             <!-- Mobile Toggle -->
@@ -102,7 +101,7 @@
     <!-- Hero Section -->
     <section class="relative min-h-screen flex flex-col justify-center pt-24 pb-12 overflow-hidden">
         <!-- Globe Container -->
-        <div id="globeViz" class="absolute inset-0 z-0 opacity-40 translate-y-[20%] pointer-events-auto cursor-move"></div>
+        <div id="globeViz" class="absolute inset-0 z-0 opacity-70 translate-y-[20%] pointer-events-auto cursor-move"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-0 pointer-events-none"></div>
 
         <div class="relative z-10 w-full max-w-7xl mx-auto px-6 text-center">

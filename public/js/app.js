@@ -117,11 +117,33 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeAuth();
     initializeNavigation();
     initializeEventListeners();
+    checkForURLParameter();
 });
 
 // ================================
 // THEME SYSTEM
 // ================================
+
+function checkForURLParameter() {
+    // Check if there's a URL parameter from the landing page
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefilledUrl = urlParams.get('url');
+    
+    if (prefilledUrl) {
+        // Wait for user to be authenticated before opening modal
+        const checkAuthInterval = setInterval(() => {
+            if (currentUser) {
+                clearInterval(checkAuthInterval);
+                openCreateLinkModal();
+            }
+        }, 100);
+        
+        // Timeout after 5 seconds if user is not authenticated
+        setTimeout(() => {
+            clearInterval(checkAuthInterval);
+        }, 5000);
+    }
+}
 
 function initializeTheme() {
     // Always use dark theme
@@ -820,6 +842,16 @@ async function handleLogout(e) {
 
 async function openCreateLinkModal() {
     createLinkModal.classList.add('show');
+    
+    // Check if there's a URL parameter to pre-fill
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefilledUrl = urlParams.get('url');
+    if (prefilledUrl) {
+        destinationUrl.value = decodeURIComponent(prefilledUrl);
+        // Clear the URL parameter from the address bar
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     destinationUrl.focus();
     
     // Ensure userProfile is loaded
