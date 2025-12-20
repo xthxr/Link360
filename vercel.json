@@ -2,14 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "public/landing/package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    },
-    {
       "src": "server.js",
       "use": "@vercel/node"
     }
@@ -36,8 +28,12 @@
       "dest": "/public/$1"
     },
     {
+      "src": "/landing.html",
+      "dest": "/public/landing.html"
+    },
+    {
       "src": "^/$",
-      "dest": "/public/landing/$1"
+      "dest": "/public/landing.html"
     },
     {
       "src": "/(.*)",
