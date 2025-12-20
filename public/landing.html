@@ -39,8 +39,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     
-    <!-- Globe.gl (Local Vendor) -->
-    <script src="js/vendor/globe.gl.min.js"></script>
+    <!-- Three.js (required for Globe.gl) -->
+    <script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
+    
+    <!-- Globe.gl -->
+    <script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
 </head>
 <body class="bg-black text-white overflow-x-hidden antialiased selection:bg-accent selection:text-white">
     
@@ -51,13 +54,10 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10" id="navbar">
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/10 transition-all duration-300" id="navbar">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <!-- Logo -->
-            <a href="/" class="flex items-center gap-2 group">
-                <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg transition-all duration-200 group-hover:bg-white/15">
-                    <img src="/assets/images/logo.png" alt="piik.me" class="w-5 h-5 object-contain brightness-0 invert">
-                </div>
+            <a href="/" class="group">
                 <span class="text-white font-semibold text-lg tracking-tight">PIIK.ME</span>
             </a>
 
@@ -99,15 +99,15 @@
     </div>
 
     <!-- Hero Section -->
-    <section class="relative min-h-screen flex flex-col justify-center pt-24 pb-12 overflow-hidden">
-        <!-- Globe Container -->
-        <div id="globeViz" class="absolute inset-0 z-0 opacity-70 translate-y-[20%] pointer-events-auto cursor-move"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-0 pointer-events-none"></div>
+    <section class="relative min-h-screen flex flex-col justify-center pt-24 pb-12 overflow-hidden" style="background: black;">
+        <!-- Globe Container - Fixed size, no transforms -->
+        <div id="globeViz" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; transform: none !important; opacity: 1 !important;"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" style="z-index: 2;"></div>
 
-        <div class="relative z-10 w-full max-w-7xl mx-auto px-6 text-center">
+        <div class="relative w-full max-w-7xl mx-auto px-6 text-center" style="z-index: 10;">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 animate-fade-in-up">
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span class="text-sm text-gray-300 font-medium">v2.0 is now live</span>
+                <span class="text-sm text-gray-300 font-medium">Beta v0.1 is Now Live</span>
             </div>
             
             <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight animate-fade-in-up" style="animation-delay: 0.1s;">
@@ -127,21 +127,13 @@
                     View features
                 </a>
             </div>
-            
-            <div class="mt-16 flex items-center justify-center gap-8 text-gray-500 grayscale opacity-60 animate-fade-in-up" style="animation-delay: 0.4s;">
-                <!-- Trusted by logos placeholder -->
-                <i class="fab fa-github text-2xl"></i>
-                <i class="fab fa-twitter text-2xl"></i>
-                <i class="fab fa-discord text-2xl"></i>
-                <i class="fab fa-product-hunt text-2xl"></i>
-            </div>
         </div>
     </section>
 
     <!-- Features Grid -->
     <section class="py-32 relative z-10" id="features">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-24">
+            <div class="text-center mb-24" id="analytics">
                 <h2 class="text-3xl md:text-5xl font-bold mb-6">Everything you need to <br> manage your links.</h2>
                 <p class="text-gray-400 text-lg max-w-2xl mx-auto">Stop using multiple tools. Piik.me gives you a complete suite of link management tools in one powerful dashboard.</p>
             </div>
@@ -304,9 +296,8 @@
         <div class="max-w-7xl mx-auto px-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                 <div class="col-span-1 md:col-span-2">
-                    <a href="/" class="flex items-center gap-2 mb-4">
-                        <img src="assets/images/logo.png" alt="piik.me" class="w-6 h-6 opacity-80">
-                        <span class="font-bold text-lg">piik.me</span>
+                    <a href="/" class="mb-4">
+                        <span class="font-bold text-lg">PIIK.ME</span>
                     </a>
                     <p class="text-gray-400 max-w-sm">The open-source intelligent link infrastructure for modern creators and businesses.</p>
                 </div>

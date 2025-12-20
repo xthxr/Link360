@@ -3,6 +3,7 @@
 // ================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing...');
     initGlobe();
     initMobileMenu();
     initScrollAnimations();
@@ -12,61 +13,74 @@ document.addEventListener('DOMContentLoaded', () => {
 // 3D GLOBE VISUALIZATION
 // ================================
 function initGlobe() {
+    console.log('Initializing globe...');
     const globeContainer = document.getElementById('globeViz');
-    if (!globeContainer) return;
-
-    // Configuration
-    const N_ARCS = 20;
-    const ARC_REL_LEN = 0.4; // relative to whole arc
-    const FLIGHT_TIME = 1000;
-    const NUM_RINGS = 3;
-    const RINGS_MAX_R = 5; // deg
-    const RING_PROPAGATION_SPEED = 5; // deg/sec
-
-    // Generate random data
-    const arcsData = [...Array(N_ARCS).keys()].map(() => ({
-        startLat: (Math.random() - 0.5) * 180,
-        startLng: (Math.random() - 0.5) * 360,
-        endLat: (Math.random() - 0.5) * 180,
-        endLng: (Math.random() - 0.5) * 360,
-        color: [['#3b82f6', '#8b5cf6', '#ec4899'][Math.round(Math.random() * 2)], ['#3b82f6', '#8b5cf6', '#ec4899'][Math.round(Math.random() * 2)]]
-    }));
-
-    // Initialize Globe
-    const world = Globe()
-        (globeContainer)
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-        .arcsData(arcsData)
-        .arcColor('color')
-        .arcDashLength(ARC_REL_LEN)
-        .arcDashGap(2)
-        .arcDashInitialGap(1)
-        .arcDashAnimateTime(FLIGHT_TIME)
-        .peaksData(arcsData)
-        .peakColor(() => '#3b82f6')
-        .peakAltitude(0.1)
-        .peakRadius(0.5)
-        .atmosphereColor('#3b82f6')
-        .atmosphereAltitude(0.15)
-        .hexBinPointWeight('pop')
-        .hexBinResolution(4)
-        .hexBinMerge(true)
-        .enablePointerInteraction(false) // Keep it as background
-        .width(window.innerWidth)
-        .height(window.innerHeight);
-
-    // Auto-rotate
-    world.controls().autoRotate = true;
-    world.controls().autoRotateSpeed = 0.5;
     
-    // Zoom out slightly to fit
-    world.pointOfView({ altitude: 2.5 });
+    if (!globeContainer) {
+        console.error('Globe container not found!');
+        return;
+    }
+    
+    console.log('Globe container found:', globeContainer);
 
-    // Handle Resize
-    window.addEventListener('resize', () => {
-        world.width(window.innerWidth);
-        world.height(window.innerHeight);
-    });
+    // Check if Globe is available
+    if (typeof Globe === 'undefined') {
+        console.error('Globe.gl library not loaded!');
+        return;
+    }
+    
+    console.log('Globe library loaded, creating globe...');
+
+    try {
+        // Configuration
+        const N_ARCS = 20;
+        const ARC_REL_LEN = 0.4;
+        const FLIGHT_TIME = 1000;
+
+        // Generate random data
+        const arcsData = [...Array(N_ARCS).keys()].map(() => ({
+            startLat: (Math.random() - 0.5) * 180,
+            startLng: (Math.random() - 0.5) * 360,
+            endLat: (Math.random() - 0.5) * 180,
+            endLng: (Math.random() - 0.5) * 360,
+            color: [['#3b82f6', '#8b5cf6', '#ec4899'][Math.round(Math.random() * 2)], ['#3b82f6', '#8b5cf6', '#ec4899'][Math.round(Math.random() * 2)]]
+        }));
+
+        // Initialize Globe
+        const world = Globe()(globeContainer)
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+            .arcsData(arcsData)
+            .arcColor('color')
+            .arcDashLength(ARC_REL_LEN)
+            .arcDashGap(2)
+            .arcDashInitialGap(1)
+            .arcDashAnimateTime(FLIGHT_TIME)
+            .atmosphereColor('#3b82f6')
+            .atmosphereAltitude(0.15)
+            .width(globeContainer.offsetWidth || window.innerWidth)
+            .height(globeContainer.offsetHeight || window.innerHeight);
+
+        // Auto-rotate
+        world.controls().autoRotate = true;
+        world.controls().autoRotateSpeed = 0.5;
+        
+        // Zoom out to fit screen
+        world.pointOfView({ altitude: 2.5 });
+        
+        console.log('Globe created successfully!');
+
+        // Handle Resize - keep globe responsive
+        window.addEventListener('resize', () => {
+            const width = globeContainer.offsetWidth || window.innerWidth;
+            const height = globeContainer.offsetHeight || window.innerHeight;
+            world.width(width);
+            world.height(height);
+        });
+        
+    } catch (error) {
+        console.error('Error initializing globe:', error);
+        globeContainer.innerHTML = '<div style="color: red; padding: 20px;">Globe failed to load: ' + error.message + '</div>';
+    }
 }
 
 // ================================
@@ -108,35 +122,44 @@ function initMobileMenu() {
 // SCROLL ANIMATIONS (GSAP)
 // ================================
 function initScrollAnimations() {
-    gsap.registerPlugin(ScrollTrigger);
+    // Check if GSAP is available
+    if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+        try {
+            gsap.registerPlugin(ScrollTrigger);
 
-    // Navbar Blur Effect
-    const navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add('bg-black/90', 'shadow-lg');
-            navbar.classList.remove('bg-black/50');
-        } else {
-            navbar.classList.remove('bg-black/90', 'shadow-lg');
-            navbar.classList.add('bg-black/50');
+            // Reveal elements on scroll
+            gsap.utils.toArray('.group').forEach(group => {
+                gsap.fromTo(group, 
+                    { y: 50, opacity: 0 },
+                    {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        stagger: 0.2,
+                        scrollTrigger: {
+                            trigger: group,
+                            start: "top 80%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+        } catch (error) {
+            console.warn('GSAP animations not initialized:', error);
         }
-    });
+    }
 
-    // Reveal elements on scroll
-    gsap.utils.toArray('.group').forEach(group => {
-        gsap.fromTo(group, 
-            { y: 50, opacity: 0 },
-            {
-                y: 0,
-                opacity: 1,
-                duration: 0.8,
-                stagger: 0.2,
-                scrollTrigger: {
-                    trigger: group,
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
-                }
+    // Navbar Blur Effect (works without GSAP)
+    const navbar = document.getElementById('navbar');
+    if (navbar) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                navbar.classList.add('shadow-lg');
+            } else {
+                navbar.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+                navbar.classList.remove('shadow-lg');
             }
-        );
-    });
+        });
+    }
 }

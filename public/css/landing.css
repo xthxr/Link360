@@ -28,6 +28,10 @@ html {
     -moz-osx-font-smoothing: grayscale;
 }
 
+.scroll-smooth {
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: var(--color-bg);
     color: var(--color-text);
@@ -49,6 +53,8 @@ body {
 .absolute { position: absolute; }
 .relative { position: relative; }
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.left-0 { left: 0; }
+.right-0 { right: 0; }
 .hidden { display: none; }
 .block { display: block; }
 .flex { display: flex; }
@@ -272,6 +278,8 @@ body {
 .mix-blend-screen { mix-blend-mode: screen; }
 .inline-flex { display: inline-flex; }
 .group { position: relative; }
+.order-1 { order: 1; }
+.order-2 { order: 2; }
 
 /* Responsive */
 @media (min-width: 640px) {
