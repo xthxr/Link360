@@ -2,16 +2,42 @@
 // LANDING PAGE AUTHENTICATION
 // ================================
 
-// Initialize Google Auth Provider
-const googleProvider = new firebase.auth.GoogleAuthProvider();
+// Note: googleProvider is already initialized in firebase-config.js
+
+// Track if auth state is ready
+let authStateReady = false;
+let currentAuthUser = null;
+
+// Wait for Firebase auth to be ready
+firebase.auth().onAuthStateChanged((user) => {
+    authStateReady = true;
+    currentAuthUser = user;
+    
+    if (user) {
+        console.log('User is already authenticated:', user.displayName);
+        // Update button text to indicate user is signed in
+        updateButtonsForAuthenticatedUser();
+    } else {
+        console.log('No user authenticated');
+    }
+});
 
 // Handle Smart Sign In
 async function handleSmartSignIn() {
     try {
-        // Check if user is already authenticated
-        const currentUser = firebase.auth().currentUser;
+        // Wait for auth state to be ready
+        if (!authStateReady) {
+            console.log('Waiting for auth state...');
+            await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(() => {
+                    unsubscribe();
+                    resolve();
+                });
+            });
+        }
         
-        if (currentUser) {
+        // Check if user is already authenticated
+        if (currentAuthUser) {
             // User is already signed in, redirect to home page
             console.log('User already authenticated, redirecting to home...');
             window.location.href = '/home';
@@ -23,7 +49,7 @@ async function handleSmartSignIn() {
         
         // Try popup method first
         try {
-            const result = await firebase.auth().signInWithPopup(googleProvider);
+            const result = await firebase.auth().signInWithPopup(window.googleProvider);
             console.log('Signed in successfully:', result.user.displayName);
             
             // Redirect to home page after successful sign in
@@ -32,7 +58,7 @@ async function handleSmartSignIn() {
             if (popupError.code === 'auth/popup-blocked') {
                 // Fallback to redirect if popup is blocked
                 console.log('Popup blocked, using redirect method...');
-                await firebase.auth().signInWithRedirect(googleProvider);
+                await firebase.auth().signInWithRedirect(window.googleProvider);
             } else if (popupError.code === 'auth/popup-closed-by-user') {
                 // User closed popup, do nothing
                 console.log('Sign-in popup closed by user');
@@ -62,15 +88,6 @@ firebase.auth().getRedirectResult().then((result) => {
     }
 });
 
-// Check authentication state on page load
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        console.log('User is already authenticated:', user.displayName);
-        // Update button text to indicate user is signed in
-        updateButtonsForAuthenticatedUser();
-    }
-});
-
 // Update button text for authenticated users
 function updateButtonsForAuthenticatedUser() {
     const loginBtn = document.getElementById('loginBtn');
@@ -78,16 +95,36 @@ function updateButtonsForAuthenticatedUser() {
     const heroStartBtn = document.getElementById('heroStartBtn');
     const mobileLoginBtn = document.getElementById('mobileLoginBtn');
     const mobileGetStartedBtn = document.getElementById('mobileGetStartedBtn');
-    
-    if (loginBtn) loginBtn.textContent = 'GO TO DASHBOARD';
-    if (getStartedBtn) getStartedBtn.textContent = 'GO TO DASHBOARD';
-    if (heroStartBtn) heroStartBtn.textContent = 'Go to Dashboard';
-    if (mobileLoginBtn) mobileLoginBtn.textContent = 'Go to Dashboard';
-    if (mobileGetStartedBtn) mobileGetStartedBtn.textContent = 'Go to Dashboard';
+
+    // Desktop: Show only one button
+    if (loginBtn) {
+        loginBtn.textContent = 'GO TO DASHBOARD';
+        loginBtn.style.display = 'inline-block';
+    }
+    if (getStartedBtn) {
+        getStartedBtn.style.display = 'none';
+    }
+
+    // Hero section: Show only one button
+    if (heroStartBtn) {
+        heroStartBtn.textContent = 'Go to Dashboard';
+        heroStartBtn.style.display = 'inline-block';
+    }
+
+    // Mobile: Show only one button
+    if (mobileLoginBtn) {
+        mobileLoginBtn.textContent = 'Go to Dashboard';
+        mobileLoginBtn.style.display = 'block';
+    }
+    if (mobileGetStartedBtn) {
+        mobileGetStartedBtn.style.display = 'none';
+    }
 }
 
 // Add event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== Landing Auth: DOM Content Loaded ===');
+    
     // Desktop buttons
     const loginBtn = document.getElementById('loginBtn');
     const getStartedBtn = document.getElementById('getStartedBtn');
@@ -97,21 +134,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileLoginBtn = document.getElementById('mobileLoginBtn');
     const mobileGetStartedBtn = document.getElementById('mobileGetStartedBtn');
     
+    console.log('Buttons found:', {
+        loginBtn: !!loginBtn,
+        getStartedBtn: !!getStartedBtn,
+        heroStartBtn: !!heroStartBtn,
+        mobileLoginBtn: !!mobileLoginBtn,
+        mobileGetStartedBtn: !!mobileGetStartedBtn
+    });
+    
     // Attach click handlers to all buttons
     if (loginBtn) {
-        loginBtn.addEventListener('click', handleSmartSignIn);
+        loginBtn.addEventListener('click', () => {
+            console.log('Login button clicked');
+            handleSmartSignIn();
+        });
     }
     
     if (getStartedBtn) {
-        getStartedBtn.addEventListener('click', handleSmartSignIn);
+        getStartedBtn.addEventListener('click', () => {
+            console.log('Get Started button clicked');
+            handleSmartSignIn();
+        });
     }
     
     if (heroStartBtn) {
-        heroStartBtn.addEventListener('click', handleSmartSignIn);
+        heroStartBtn.addEventListener('click', () => {
+            console.log('Hero Start button clicked');
+            handleSmartSignIn();
+        });
     }
     
     if (mobileLoginBtn) {
         mobileLoginBtn.addEventListener('click', () => {
+            console.log('Mobile Login button clicked');
             // Close mobile menu first
             const mobileMenu = document.getElementById('mobileMenu');
             if (mobileMenu) {
@@ -124,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (mobileGetStartedBtn) {
         mobileGetStartedBtn.addEventListener('click', () => {
+            console.log('Mobile Get Started button clicked');
             // Close mobile menu first
             const mobileMenu = document.getElementById('mobileMenu');
             if (mobileMenu) {

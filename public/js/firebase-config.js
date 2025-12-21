@@ -20,7 +20,7 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 // Configure Google Auth Provider
-const googleProvider = new firebase.auth.GoogleAuthProvider();
-googleProvider.setCustomParameters({
+window.googleProvider = new firebase.auth.GoogleAuthProvider();
+window.googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
