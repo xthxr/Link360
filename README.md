@@ -5,7 +5,7 @@
 ### The open-source link infrastructure for modern businesses.
 ### Real-time analytics, custom domains, and zero latency redirects.
 
-[![License:  MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License:  GNU](https://img.shields.io/badge/License-GNU-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-v14+-green.svg)](https://nodejs.org)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange.svg)](https://firebase.google.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-black.svg)](https://socket.io)
