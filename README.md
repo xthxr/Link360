@@ -21,16 +21,15 @@
 
 ## 📋 Overview
 
-piik.me is a comprehensive link management and analytics platform that empowers marketers, developers, and businesses to create, track, and analyze their URLs with unprecedented insight.  Built with modern web technologies and real-time capabilities, it offers everything from URL shortening to personalized bio link pages. 
+PIIK.ME is a comprehensive link management and analytics platform that empowers marketers, developers, and businesses to create, track, and analyze their URLs with unprecedented insight.  Built with modern web technologies and real-time capabilities, it offers everything from URL shortening to personalized bio link pages. 
 
-### Why piik.me?
+### Why PIIK.ME?
 
 - **🚀 Real-Time Analytics** - Watch clicks happen live with WebSocket-powered updates
 - **📱 QR Code Generation** - Instantly generate and download customizable QR codes
 - **🎯 Campaign Tracking** - Built-in UTM parameter support for marketing attribution
 - **👤 Bio Links** - Create stunning personalized bio pages with social links (like Linktree)
 - **✅ Verified Badges** - Premium verification system for early adopters
-- **🎨 Holographic UI** - Beautiful glassmorphism design with 3D parallax effects
 - **🔒 Secure & Private** - Firebase Authentication with security rules
 - **💾 Persistent Storage** - All data safely stored in Google Cloud Firestore
 - **⚡ Low Latency** - Sub-second analytics updates for immediate insights
