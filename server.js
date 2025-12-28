@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const { nanoid } = require('nanoid');
 const admin = require('firebase-admin');
+const redisUtils = require('./src/utils/redis.utils');
 require('dotenv').config();
 
 // Initialize Firebase Admin
@@ -248,6 +249,14 @@ app.post('/api/shorten', verifyToken, async (req, res) => {
     
     await db.collection(COLLECTIONS.ANALYTICS).doc(firestoreId).set(analyticsData);
     console.log('Analytics saved successfully to Firestore');
+    
+    // Sync to Redis for edge redirects
+    await redisUtils.storeLinkInRedis(shortCode, {
+      destination: finalUrl,
+      userId: userId,
+      createdAt: Date.now(),
+      title: linkData.title || '',
+    });
     
     // Verify the save by reading it back
     const verifyDoc = await db.collection(COLLECTIONS.LINKS).doc(firestoreId).get();
@@ -573,6 +582,9 @@ app.delete('/api/links/:shortCode', verifyToken, async (req, res) => {
     const analyticsRef = db.collection(COLLECTIONS.ANALYTICS).doc(firestoreId);
     await analyticsRef.delete();
     
+    // Delete from Redis
+    await redisUtils.deleteLinkFromRedis(shortCode);
+    
     res.json({ success: true, message: 'Link deleted successfully' });
   } catch (error) {
     console.error('Error deleting link:', error);
@@ -705,6 +717,22 @@ app.post('/api/import-profile', async (req, res) => {
     
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
+    }
+    
+    // SSRF Protection: Allow-list for trusted domains only
+    const allowedDomains = [
+      'https://linktr.ee/',
+      'https://bento.me/'
+    ];
+    
+    const isAllowed = allowedDomains.some(domain => url.startsWith(domain));
+    
+    if (!isAllowed) {
+      console.warn('⚠️  Blocked SSRF attempt:', url);
+      return res.status(403).json({ 
+        error: 'Invalid URL',
+        message: 'Only Linktree (linktr.ee) and Bento (bento.me) profiles can be imported'
+      });
     }
     
     console.log('Fetching profile from:', url);
@@ -923,9 +951,14 @@ app.get('/:username/:slug', async (req, res) => {
     const analyticsDoc = await analyticsRef.get();
 
     if (analyticsDoc.exists) {
+      // Store each click as a separate document in clicks sub-collection
+      // This avoids the 1MB Firestore document limit and allows infinite scaling
+      const clickRef = analyticsRef.collection('clicks').doc();
+      await clickRef.set(clickData);
+
+      // Update aggregate counters
       await analyticsRef.update({
         clicks: admin.firestore.FieldValue.increment(1),
-        clickHistory: admin.firestore.FieldValue.arrayUnion(clickData),
         [`devices.${deviceType}`]: admin.firestore.FieldValue.increment(1),
         [`browsers.${browser}`]: admin.firestore.FieldValue.increment(1),
         [`countries.${locationData.country}`]: admin.firestore.FieldValue.increment(1),
@@ -1141,6 +1174,11 @@ app.get('/:shortCode', async (req, res) => {
       // Create location key (City, Region)
       const locationKey = `${locationData.city}, ${locationData.region}`;
       
+      // Store each click as a separate document in clicks sub-collection
+      // This avoids the 1MB Firestore document limit and allows infinite scaling
+      const clickRef = analyticsRef.collection('clicks').doc();
+      await clickRef.set(clickData);
+
       const updateData = {
         impressions: admin.firestore.FieldValue.increment(1),
         clicks: admin.firestore.FieldValue.increment(1),
@@ -1148,8 +1186,7 @@ app.get('/:shortCode', async (req, res) => {
         [`browsers.${browser}`]: admin.firestore.FieldValue.increment(1),
         [`referrers.${referrerSource}`]: admin.firestore.FieldValue.increment(1),
         [`countries.${locationData.country}`]: admin.firestore.FieldValue.increment(1),
-        [`locations.${locationKey}`]: admin.firestore.FieldValue.increment(1),
-        clickHistory: admin.firestore.FieldValue.arrayUnion(clickData)
+        [`locations.${locationKey}`]: admin.firestore.FieldValue.increment(1)
       };
       
       // If UTM source exists, count it as a share
@@ -1205,6 +1242,26 @@ app.get('/:shortCode', async (req, res) => {
 
   // Redirect to original URL
   res.redirect(link.originalUrl);
+});
+
+// Admin endpoint: Sync all links to Redis
+app.post('/api/admin/sync-redis', verifyToken, async (req, res) => {
+  try {
+    // Check if user is admin (you can add admin check logic here)
+    const result = await redisUtils.syncAllLinksToRedis(db);
+    
+    res.json({
+      success: result.success,
+      message: `Synced ${result.count} links to Redis`,
+      errors: result.errors || 0
+    });
+  } catch (error) {
+    console.error('Error syncing to Redis:', error);
+    res.status(500).json({ 
+      error: 'Failed to sync to Redis', 
+      details: error.message 
+    });
+  }
 });
 
 // Socket.IO connection

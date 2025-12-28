@@ -2,6 +2,50 @@
 // BIO LINK MODULE
 // ================================
 
+// Load DOMPurify for XSS protection
+let DOMPurify;
+(function() {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js';
+    script.integrity = 'sha512-HyvkZ2dDQ/ABFHvILkhAE5N6b8uWKF92j1zJnHsawqALeX3T1d6dnPRCKhbQ2uk0kHfXR4vK0DsPJ9J0RQz3dw==';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+        DOMPurify = window.DOMPurify;
+        console.log('✅ DOMPurify loaded for XSS protection');
+    };
+    script.onerror = () => {
+        console.warn('⚠️  DOMPurify failed to load, using fallback sanitization');
+        // Fallback basic sanitization
+        DOMPurify = {
+            sanitize: (dirty) => {
+                if (typeof dirty !== 'string') return '';
+                return dirty.replace(/[<>"']/g, (char) => {
+                    const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+                    return entities[char];
+                });
+            }
+        };
+    };
+    document.head.appendChild(script);
+})();
+
+// Sanitize helper function
+function sanitizeHTML(dirty) {
+    if (!dirty) return '';
+    if (!DOMPurify) {
+        // Fallback if DOMPurify not loaded yet
+        return String(dirty).replace(/[<>"']/g, (char) => {
+            const entities = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+            return entities[char];
+        });
+    }
+    return DOMPurify.sanitize(dirty, {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br'],
+        ALLOWED_ATTR: ['href', 'target', 'rel'],
+        ALLOW_DATA_ATTR: false
+    });
+}
+
 let bioLinks = [];
 let currentBioLink = null;
 let bioLinkItems = [];
@@ -219,8 +263,8 @@ function renderBioLinkItems() {
                 <i class="fas fa-grip-vertical"></i>
             </div>
             <div class="bio-link-item-content">
-                <input type="text" class="form-input" placeholder="Link Title" value="${item.title || ''}" onchange="updateBioLinkItem(${index}, 'title', this.value)">
-                <input type="url" class="form-input" placeholder="https://example.com" value="${item.url || ''}" onchange="updateBioLinkItem(${index}, 'url', this.value)">
+                <input type="text" class="form-input" placeholder="Link Title" value="${sanitizeHTML(item.title || '')}" onchange="updateBioLinkItem(${index}, 'title', this.value)">
+                <input type="url" class="form-input" placeholder="https://example.com" value="${sanitizeHTML(item.url || '')}" onchange="updateBioLinkItem(${index}, 'url', this.value)">
             </div>
             <button class="btn-icon" onclick="removeBioLinkItem(${index})" title="Remove">
                 <i class="fas fa-times"></i>
@@ -1402,12 +1446,12 @@ function generateBioPreviewHTML(bioLink) {
     // Build social links HTML
     const social = bioLink.social || {};
     const socialLinks = [];
-    if (social.instagram) socialLinks.push({ icon: 'fab fa-instagram', url: `https://instagram.com/${social.instagram}` });
-    if (social.twitter) socialLinks.push({ icon: 'fab fa-twitter', url: `https://x.com/${social.twitter}` });
-    if (social.linkedin) socialLinks.push({ icon: 'fab fa-linkedin', url: social.linkedin.startsWith('http') ? social.linkedin : `https://linkedin.com/in/${social.linkedin}` });
-    if (social.github) socialLinks.push({ icon: 'fab fa-github', url: `https://github.com/${social.github}` });
-    if (social.youtube) socialLinks.push({ icon: 'fab fa-youtube', url: social.youtube.startsWith('http') ? social.youtube : `https://youtube.com/@${social.youtube}` });
-    if (social.website) socialLinks.push({ icon: 'fas fa-globe', url: social.website.startsWith('http') ? social.website : `https://${social.website}` });
+    if (social.instagram) socialLinks.push({ icon: 'fab fa-instagram', url: sanitizeHTML(`https://instagram.com/${social.instagram}`) });
+    if (social.twitter) socialLinks.push({ icon: 'fab fa-twitter', url: sanitizeHTML(`https://x.com/${social.twitter}`) });
+    if (social.linkedin) socialLinks.push({ icon: 'fab fa-linkedin', url: sanitizeHTML(social.linkedin.startsWith('http') ? social.linkedin : `https://linkedin.com/in/${social.linkedin}`) });
+    if (social.github) socialLinks.push({ icon: 'fab fa-github', url: sanitizeHTML(`https://github.com/${social.github}`) });
+    if (social.youtube) socialLinks.push({ icon: 'fab fa-youtube', url: sanitizeHTML(social.youtube.startsWith('http') ? social.youtube : `https://youtube.com/@${social.youtube}`) });
+    if (social.website) socialLinks.push({ icon: 'fas fa-globe', url: sanitizeHTML(social.website.startsWith('http') ? social.website : `https://${social.website}`) });
     
     let socialLinksHTML = '';
     if (socialLinks.length > 0) {
@@ -1427,13 +1471,13 @@ function generateBioPreviewHTML(bioLink) {
         bioLink.links.forEach((link) => {
             const domain = extractDomain(link.url);
             const icon = getLinkIcon(link.url);
-            linksHTML += `<a href="${link.url}" class="bio-link-item" target="_blank" rel="noopener noreferrer">
+            linksHTML += `<a href="${sanitizeHTML(link.url)}" class="bio-link-item" target="_blank" rel="noopener noreferrer">
                 <div class="link-icon">
                     <i class="${icon}"></i>
                 </div>
                 <div class="link-content">
-                    <div class="link-title">${link.title}</div>
-                    <div class="link-url">${domain}</div>
+                    <div class="link-title">${sanitizeHTML(link.title)}</div>
+                    <div class="link-url">${sanitizeHTML(domain)}</div>
                 </div>
             </a>`;
         });
@@ -1456,7 +1500,7 @@ function generateBioPreviewHTML(bioLink) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${bioLink.name}</title>
+    <title>${sanitizeHTML(bioLink.name)}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Encode+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/bio-preview.css">
@@ -1475,19 +1519,19 @@ function generateBioPreviewHTML(bioLink) {
     <div class="bio-container" style="margin: 0; max-height: 100vh; overflow-y: auto;">
         <div class="bio-header">
             ${bioLink.profilePicture ? 
-                `<img src="${bioLink.profilePicture}" alt="${bioLink.name}" class="bio-avatar">` :
-                `<div class="bio-avatar-placeholder" style="background: ${themeColor};">
+                `<img src="${sanitizeHTML(bioLink.profilePicture)}" alt="${sanitizeHTML(bioLink.name)}" class="bio-avatar">` :
+                `<div class="bio-avatar-placeholder" style="background: ${sanitizeHTML(themeColor)};">
                     <i class="fas fa-user"></i>
                 </div>`
             }
             <h1 class="bio-name">
-                ${bioLink.name}
+                ${sanitizeHTML(bioLink.name)}
                 ${bioLink.verified ? 
                     '<span class="verified-badge"><i class="fas fa-check"></i></span>' : 
                     '<span class="under-review-badge">Preview</span>'
                 }
             </h1>
-            ${bioLink.description ? `<p class="bio-description">${bioLink.description}</p>` : ''}
+            ${bioLink.description ? `<p class="bio-description">${sanitizeHTML(bioLink.description)}</p>` : ''}
             ${socialLinksHTML}
         </div>
         ${linksHTML}
