@@ -901,12 +901,14 @@ html[data-theme="light"] .app-orb {
     position: relative;
     z-index: 1;
     max-width: 100%;
+    box-sizing: border-box;
 }
 
 .page {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .page-header {
@@ -1241,6 +1243,9 @@ html[data-theme="light"] .filter-select:hover {
 .links-container {
     display: grid;
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .link-card {
@@ -1251,9 +1256,13 @@ html[data-theme="light"] .filter-select:hover {
     padding: 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     transition: all var(--transition-normal);
     box-shadow: var(--card-shadow);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .link-card:hover {
@@ -1307,6 +1316,8 @@ html[data-theme="light"] .filter-select:hover {
 .link-content {
     flex: 1;
     min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .link-url {
@@ -1318,6 +1329,7 @@ html[data-theme="light"] .filter-select:hover {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    line-height: 1.4;
 }
 
 .link-short {
@@ -1337,6 +1349,7 @@ html[data-theme="light"] .filter-select:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 8px;
+    line-height: 1.5;
 }
 
 .link-meta {
@@ -1345,6 +1358,7 @@ html[data-theme="light"] .filter-select:hover {
     gap: 16px;
     font-size: 12px;
     color: var(--text-tertiary);
+    line-height: 1.4;
 }
 
 .link-meta span {
@@ -1357,6 +1371,8 @@ html[data-theme="light"] .filter-select:hover {
     display: flex;
     gap: 24px;
     align-items: center;
+    margin-left: auto;
+    padding-right: 16px;
 }
 
 .link-stat {
@@ -1364,6 +1380,7 @@ html[data-theme="light"] .filter-select:hover {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    min-width: 60px;
 }
 
 .link-stat-value {
@@ -1382,6 +1399,7 @@ html[data-theme="light"] .filter-select:hover {
 .link-actions {
     display: flex;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .link-action-btn {
@@ -1396,6 +1414,7 @@ html[data-theme="light"] .filter-select:hover {
     align-items: center;
     justify-content: center;
     transition: var(--transition-fast);
+    flex-shrink: 0;
 }
 
 .link-action-btn:hover {

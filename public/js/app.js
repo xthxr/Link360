@@ -6,7 +6,7 @@
 let currentPage = 'home';
 let currentTheme = 'dark';
 let userLinks = [];
-let currentUser = null;
+// currentUser is declared in auth.js
 let userProfile = null; // Store user profile with username
 let userBioSlug = null; // Store user's username for backward compatibility
 
@@ -44,7 +44,7 @@ const sidebarUserEmail = document.getElementById('sidebarUserEmail');
 const topbarUserPhoto = document.getElementById('topbarUserPhoto');
 const userMenuBtn = document.getElementById('userMenuBtn');
 const userDropdown = document.getElementById('userDropdown');
-const logoutBtn = document.getElementById('logoutBtn');
+// logoutBtn is declared in auth.js
 
 // Modal Elements
 const createLinkModal = document.getElementById('createLinkModal');
@@ -55,7 +55,6 @@ const createLinkBtn = document.getElementById('createLinkBtn');
 const createFirstBtn = document.getElementById('createFirstBtn');
 const createLinkSubmit = document.getElementById('createLinkSubmit');
 const loginModal = document.getElementById('loginModal');
-const googleLoginBtn = document.getElementById('googleLoginBtn');
 
 // Username Modal Elements
 const usernameModal = document.getElementById('usernameModal');
@@ -461,11 +460,6 @@ function initializeEventListeners() {
         });
     }
     
-    // Google Login Button
-    if (googleLoginBtn) {
-        googleLoginBtn.addEventListener('click', handleGoogleLogin);
-    }
-    
     // Initialize custom styled selects
     initializeCustomSelects();
 }
@@ -493,50 +487,7 @@ function initializeCustomSelects() {
 // ================================
 // AUTHENTICATION
 // ================================
-
-async function handleGoogleLogin() {
-    try {
-        if (typeof firebase === 'undefined' || !firebase.auth) {
-            showToast('Firebase is not initialized', 'error');
-            return;
-        }
-        
-        const provider = new firebase.auth.GoogleAuthProvider();
-        
-        // Try popup method first
-        try {
-            const result = await firebase.auth().signInWithPopup(provider);
-            console.log('Signed in:', result.user.displayName);
-            showToast('Welcome ' + result.user.displayName + '!', 'success');
-            
-            // Close login modal on successful sign-in
-            loginModal.style.display = 'none';
-            
-            // Restore last visited page or go to home
-            const savedPage = localStorage.getItem('piikme-current-page') || 'home';
-            navigateToPage(savedPage);
-            
-        } catch (popupError) {
-            // If popup fails, try redirect
-            if (popupError.code === 'auth/popup-blocked') {
-                console.log('Popup blocked, trying redirect...');
-                await firebase.auth().signInWithRedirect(provider);
-            } else if (popupError.code === 'auth/popup-closed-by-user') {
-                // User closed popup, do nothing
-            } else {
-                throw popupError;
-            }
-        }
-    } catch (error) {
-        console.error('Error signing in:', error);
-        
-        if (error.code === 'auth/unauthorized-domain') {
-            showToast('This domain is not authorized. Please add it to Firebase Console.', 'error');
-        } else {
-            showToast('Error signing in: ' + error.message, 'error');
-        }
-    }
-}
+// Note: Google login is handled by auth.js
 
 async function initializeAuth() {
     // Listen to auth state changes
@@ -1639,6 +1590,12 @@ async function deleteLink(shortCode) {
         return;
     }
     
+    // 2FA verification before deletion
+    const verified = await verifyUserBeforeAction('deactivate this link');
+    if (!verified) {
+        return;
+    }
+    
     try {
         if (typeof firebase === 'undefined' || !firebase.firestore) {
             showToast('Firestore not available', 'error');
@@ -1683,6 +1640,12 @@ async function deleteLink(shortCode) {
 
 async function permanentlyDeleteInactiveLinks() {
     if (!confirm('Are you sure you want to permanently delete ALL inactive links? This cannot be undone!')) {
+        return;
+    }
+    
+    // 2FA verification before permanent deletion
+    const verified = await verifyUserBeforeAction('permanently delete all inactive links');
+    if (!verified) {
         return;
     }
     

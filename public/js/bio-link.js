@@ -7,7 +7,6 @@ let DOMPurify;
 (function() {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js';
-    script.integrity = 'sha512-HyvkZ2dDQ/ABFHvILkhAE5N6b8uWKF92j1zJnHsawqALeX3T1d6dnPRCKhbQ2uk0kHfXR4vK0DsPJ9J0RQz3dw==';
     script.crossOrigin = 'anonymous';
     script.onload = () => {
         DOMPurify = window.DOMPurify;

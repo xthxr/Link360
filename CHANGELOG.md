@@ -1,5 +1,16 @@
 # Changelog - December 28, 2025
 
+## 🐛 Bug Fixes (Latest)
+
+### Duplicate Declaration Errors
+- **Issue:** `googleLoginBtn` declared in both `auth.js` and `app.js` causing "Identifier has already been declared" error
+- **Fix:** Removed duplicate declaration from `app.js`
+- **Impact:** Removed duplicate `handleGoogleLogin()` function - auth.js handles all Google authentication
+- **Files Modified:** `public/js/app.js`
+- **Result:** Console errors resolved, authentication working properly
+
+---
+
 ## 🚀 Major Features
 
 ### 1. **Edge-Based Redirects with Sub-50ms Latency**
