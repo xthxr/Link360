@@ -1,14 +1,18 @@
 /* Version Banner Styles */
 .version-banner {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     z-index: 9999;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     animation: slideDown 0.3s ease-out;
+    border-radius: 24px;
+    min-width: 320px;
+    max-width: 90vw;
+    pointer-events: auto;
 }
 
 .version-banner-content {
@@ -265,10 +269,5 @@
 }
 
 /* Adjust main content to account for banner */
-body:has(.version-banner) .main-content {
-    padding-top: 48px;
-}
 
-body:has(.version-banner) .sidebar {
-    margin-top: 48px;
-}
+

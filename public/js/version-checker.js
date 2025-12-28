@@ -72,15 +72,22 @@ class VersionChecker {
         if (closeBannerBtn) {
             closeBannerBtn.addEventListener('click', () => {
                 banner.style.animation = 'slideUp 0.3s ease-out';
-                setTimeout(() => banner.remove(), 300);
-                localStorage.setItem('versionBannerDismissed', version);
+                setTimeout(() => {
+                    banner.remove();
+                    // Remove any padding-top from main-content
+                    const mainContent = document.querySelector('.main-content');
+                    if (mainContent) mainContent.style.paddingTop = '0';
+                }, 300);
+                // Set a permanent flag so the banner never shows again for this user
+                localStorage.setItem('versionBannerDismissedForever', 'true');
             });
         }
 
-        // Check if user already dismissed this version
-        const dismissedVersion = localStorage.getItem('versionBannerDismissed');
-        if (dismissedVersion === version) {
+        // Check if user has ever dismissed the banner
+        const bannerDismissed = localStorage.getItem('versionBannerDismissedForever');
+        if (bannerDismissed === 'true') {
             banner.style.display = 'none';
+            return;
         }
     }
 
