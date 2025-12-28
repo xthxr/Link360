@@ -65,7 +65,7 @@ class VersionChecker {
 
         if (whatsNewBtn) {
             whatsNewBtn.addEventListener('click', () => {
-                this.openChangelog(releaseNotes);
+                window.open('https://github.com/xthxr/piik.me/releases', '_blank');
             });
         }
 
